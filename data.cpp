@@ -1,19 +1,9 @@
-#include <iostream>
-#include <vector>
 #include "data.h"
 
 using namespace std;
 
-/*input:
-生产次数：K
-五种能源加工时间：T[5]
-车间数量：N 区域数量：R 区域能源类型：Energy[R][2]
-最大回环圈数：L
-第一种环回的窗口数量：2
-*/
-//下面两个变量改的时候，h文件里的数据也要改
-
 vector<Dev_Match> dev_match;
+unordered_set<int> Key_devices = { 0, 1, 2, 5, 6, 7, 9 };
 
 void Data_Choose() {
     for (int i = 0; i < devices; i++) {
@@ -21,8 +11,9 @@ void Data_Choose() {
         dev.dev_class = Devices[i][0];
         //核心流水线设备类型与窗口支持预处理的筛选
         for (int w = 0; w < winds; w++) {
-            if (Windows[w][dev.dev_class + 3] == 1)
-                dev.dev_win.push_back(w);
+            dev.dev_win.push_back(w);
+            if (Key_devices.find(i)!= Key_devices.end() && Windows[w][dev.dev_class + 3] == 0)
+                dev.dev_win.pop_back();
         }
         //设备支持能源与区域能源的筛选
         for (int r = 0; r < R; r++) {
@@ -31,6 +22,7 @@ void Data_Choose() {
         }
         dev_match.push_back(dev);
     }
+    return;
 }
 
 int main() {

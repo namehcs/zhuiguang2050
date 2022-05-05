@@ -1,12 +1,10 @@
 #pragma once
+#include <iostream>
+#include <unordered_set>
 #include <vector>
 
-extern vector<Dev_Match> dev_match;
-const extern int devices;
-
-const int devices = 13, R = 8, winds = 5;
-//int N = 4, K = 100000, Cl = 2;
-int E_Time[5] = { 62, 218, 242, 398, 242 };
+//extern vector<Dev_Match> dev_match;
+//const extern int devices;
 
 
 /*
@@ -16,9 +14,22 @@ class Dev_Match {
 public:
     int dev_class;
     std::vector<int> dev_win;
-    std::vector<int> dev_workshop;
+    //std::vector<int> dev_workshop;
     std::vector<int> dev_area;
 };
+
+/*input:
+生产次数：K
+五种能源加工时间：T[5]
+车间数量：N 区域数量：R 区域能源类型：Energy[R][2]
+最大回环圈数：L
+第一种环回的窗口数量：2
+*/
+//int N = 4, K = 100000, Cl = 2;
+int E_Time[5] = { 62, 218, 242, 398, 242 };
+
+const int devices = 13, R = 8, winds = 5, key_nums = 7;
+
 
 
 //:0：所在车间， 1：能源类型
