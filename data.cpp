@@ -2,10 +2,6 @@
 
 using namespace std;
 
-vector<Dev_Match> dev_match;
-unordered_set<int> Key_devices = { 0, 1, 6, 2, 7, 5, 9 };
-
-
 
 void SplitString(const string& instr, vector<string>& outstr, const string& split_by)
 {
@@ -24,7 +20,7 @@ void SplitString(const string& instr, vector<string>& outstr, const string& spli
 
 void LineGraph::Tree_Graph() {
     int type, from, to;
-    for (int i = 1; i < edge_num; i++) {
+    for (int i = 0; i < edge_num; i++) {
         type = graph_data[i][0];
         from = graph_data[i][1];
         to = graph_data[i][2];
@@ -90,22 +86,15 @@ void Data::Read_file(string& path)
         else if (block == 4) {
             getline(infile, ins);
             device_num = atoi(ins.c_str());
+            linegraph.adjacent_matrix.resize(device_num);
             for (int i = 0; i < device_num; i++) {
+                linegraph.adjacent_matrix[i].resize(device_num);
                 getline(infile, ins);
                 SplitString(ins, outs, " ");
-                vector<int> onecost;
-                if (coreline.core_devices.find(i) != coreline.core_devices.end()) {
-                    Device device(i, atoi(outs[0].c_str()), true);
-                    for (int j = 1; j < 6; j++)
-                        device.energy_install_cost.push_back(atoi(outs[j].c_str()));
-                    device_data.push_back(device);
-                }
-                else if (coreline.core_devices.find(i) == coreline.core_devices.end()) {
-                    Device device(i, atoi(outs[0].c_str()), false);
-                    for (int j = 1; j < 6; j++)
-                        device.energy_install_cost.push_back(atoi(outs[j].c_str()));
-                    device_data.push_back(device);
-                } 
+                Device device(i, atoi(outs[0].c_str()), false);
+                for (int j = 1; j < 6; j++)
+                    device.energy_install_cost.push_back(atoi(outs[j].c_str()));
+                device_data.push_back(device);
                 outs.clear();
             }
         }
@@ -127,8 +116,17 @@ void Data::Read_file(string& path)
             coreline.edge_num = atoi(ins.c_str());
             getline(infile, ins);
             SplitString(ins, outs, " ");
-            for (int i = 0; i < coreline.edge_num; i++)
-                coreline.edge_array.push_back(atoi(outs[i].c_str()));
+            int core_line = atoi(outs[0].c_str());
+            int core_device = linegraph.graph_data[core_line][1];
+            coreline.core_devices.push_back(core_device);
+            device_data[core_device].is_core_device = true;
+            for (int i = 0; i < coreline.edge_num; i++) {
+                core_line = atoi(outs[i].c_str());
+                coreline.edge_array.push_back(core_line);
+                int core_device = linegraph.graph_data[core_line][2];
+                coreline.core_devices.push_back(core_device);
+                device_data[core_device].is_core_device = true;
+            }
         }
     }
     infile.close();
@@ -136,17 +134,18 @@ void Data::Read_file(string& path)
 
 
 void Data::Data_Choose() {
-    for (int i = 0; i < devices; i++) {
-        dev.dev_class = Devices[i][0];
+    for (int i = 0; i < device_num; i++) {
+        Dev_Match dev;
+        dev.dev_id = i;
         //核心流水线设备类型与窗口支持预处理的筛选
-        for (int w = 0; w < winds; w++) {
+        for (int w = 0; w < window_num; w++) {
             dev.dev_win.push_back(w);
-            if (Key_devices.find(i)!= Key_devices.end() && Windows[w][dev.dev_class + 3] == 0)
+            if (device_data[i].is_core_device && window_data[w].preprocess_device[device_data[i].type] == false)
                 dev.dev_win.pop_back();
         }
         //设备支持能源与区域能源的筛选
-        for (int r = 0; r < R; r++) {
-            if (Devices[i][R_Energy[r][1] + 1] != 0)
+        for (int r = 0; r < area_num; r++) {
+            if (device_data[i].energy_install_cost[area_data[r].energy_type] != 0)
                 dev.dev_area.push_back(r);
         }
         dev_match.push_back(dev);
@@ -161,7 +160,7 @@ int main() {
     data.Read_file(in_path);
     data.Data_Choose();
     data.linegraph.Tree_Graph();
-    cout << dev_match.size() << endl;
+    cout << data.dev_match.size() << endl;
     return 0;
 }
 

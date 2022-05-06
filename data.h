@@ -8,16 +8,12 @@
 
 using namespace std;
 
-//extern vector<Dev_Match> dev_match;
-//const extern int devices;
-//extern unordered_set<int> Key_devices;
-
 /*
 设备数据结构：设备类型dev_class，设备所属窗口dev_win，设备所属车间dev_workshop，设备所属区域dev_area
 */
 class Dev_Match {
 public:
-    int dev_class;
+    int dev_id;
     vector<int> dev_win;
     vector<int> dev_area;
 };
@@ -73,7 +69,7 @@ public:
     int edge_num;//流水线的边数, 初始化时读入
     int production_times; //初始化时读入
     vector<int> edge_array;//流水线的边下标数组,初始化时读入
-    unordered_set<int> core_devices = { 0, 1, 6, 2, 7, 5, 9 };
+    vector<int> core_devices;
     vector<int> not_installed_device;
 };
 
@@ -91,11 +87,13 @@ public:
     vector<Window> window_data;  //初始化时读入
     vector<Area> area_data;  //初始化时读入
     vector<Device> device_data;  //初始化时读入
-    
+    vector<Dev_Match> dev_match;
+
     void Data_Choose();
     void Read_file(string& path);
     LineGraph linegraph;
     CoreLine coreline;
+    
 
 public:
     string input_path = "case0.in";
@@ -109,45 +107,3 @@ public:
     vector<int> device_process_time;//仪器使用5种能源的加工时间  
 
 };
-
-/*input:
-生产次数：K
-五种能源加工时间：T[5]
-车间数量：N 区域数量：R 区域能源类型：Energy[R][2]
-最大回环圈数：L
-第一种环回的窗口数量：2
-*/
-//int N = 4, K = 100000, Cl = 2;
-int E_Time[5] = { 62, 218, 242, 398, 242 };
-
-const int devices = 13, R = 8, winds = 5, key_nums = 7;
-
-
-
-//:0：所在车间， 1：能源类型
-int R_Energy[8][2] = { {0, 0}, {0, 1}, {0, 2}, {1, 1},
-                      {1, 3}, {2, 0}, {3, 1}, {3, 4} };
-
-//:0：是否支持自环回， 1：连接的车间下标， 2：窗口的费用系数， 3-5：窗口对 3 种仪器的预加工支持能力 
-int Windows[5][6] = { {0, 0, 1024, 1, 1, 0},
-                    {0, 0, 1480, 1, 1, 0},
-                    {0, 1, 1600, 0, 0, 1},
-                    {1, 2, 2048, 1, 1, 0},
-                    {1, 3, 2048, 1, 0, 1} };
-
-//0：仪器类型， 1-5：使用 5 种能源的安装费用 
-int Devices[13][6] = { {0, 262144,   262144, 0,       0,      0},
-                      {1, 3014656,  0,      1146880, 0,      0},
-                      {0, 67108864, 524288, 0,       0,      0},
-                      {2, 0,        0,      0,       851968, 184680448},
-                      {0, 262144,   262144, 0,       0,      0},
-                      {0, 65536,    65536,  0,       0,      0},
-                      {0, 49152,    49152,  0,       0,      0},
-                      {0, 67108864, 524288, 0,       0,      0},
-                      {2, 0,        0,      0,       983040, 218234880},
-                      {2, 0,        0,      0,       983040, 218234880},
-                      {0, 524288,   524288, 0,       0,      0},
-                      {0, 262144,   262144, 0,       0,      0},
-                      {0, 2097152,  524288, 0,       0,      0} };
-
-
