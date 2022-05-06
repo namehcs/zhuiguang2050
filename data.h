@@ -1,5 +1,6 @@
 #pragma once
 #include <vector>
+#include <unordered_map>
 
 extern vector<Dev_Match> dev_match;
 const extern int devices;
@@ -7,6 +8,70 @@ const extern int devices;
 const int devices = 13, R = 8, winds = 5;
 //int N = 4, K = 100000, Cl = 2;
 int E_Time[5] = { 62, 218, 242, 398, 242 };
+
+class OtherIn {
+public:
+    int workershop_num;
+    int max_loop_num;
+    int first_loop_window_num;
+    int window_num;
+    int device_num;
+    unordered_map<int, int> workershop_window_table;//车间和窗口的对应表
+    vector<int> device_process_time;//仪器使用5种能源的加工时间
+    
+
+};
+
+class Window {
+public:
+    int index;
+    bool self_loop;
+    int workershop_index;
+    int cost_coefficient;
+    vector<bool> preprocess_device;
+    vector<int> support_device;
+    vector<int> already_installed_device;
+};
+
+class Area {
+public:
+    int index;
+    int workershop_index;
+    int window_index;
+    int energy_type;
+    vector<int> support_device;
+    vector<int> already_installed_device;
+};
+
+class CoreLine {
+public:
+    int edge_num;//流水线的边数
+    int production_times;
+    vector<int> edge_array;//流水线的边下标数组
+    vector<int> core_devices;
+    vector<int> not_installed_device;
+};
+
+class Device {
+public:
+    int index;
+    int type;
+    bool is_core_device;
+    int distance_from_first;
+    int installed_area;
+    //int distance_from_last;
+    vector<int> energy_install_cost;
+    vector<Device*> next_device;
+    vector<Device*> last_device;
+};
+
+class LineGraph {
+public:
+    int edge_num;
+    vector<vector<int>> adjacent_matrix;
+    Device* first_device;
+};
+
 
 
 /*
