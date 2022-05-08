@@ -40,6 +40,7 @@ void Data::Read_file(string& path)
     int block = 0;
     for (int block = 0; block < 7; block++) {
         outs.clear();
+        /*加工迭代次数和能源加工时长*/
         if (block == 0) {
             getline(infile, ins);
             coreline.production_times = atoi(ins.c_str());
@@ -49,6 +50,7 @@ void Data::Read_file(string& path)
             for (string p : outs)
                 device_process_time.push_back(atoi(p.c_str()));
         }
+        /*区域数据载入*/
         else if (block == 1) {
             getline(infile, ins);
             workershop_num = atoi(ins.c_str());
@@ -63,12 +65,14 @@ void Data::Read_file(string& path)
                 outs.clear();
             }
         }
+        /*环回*/
         else if (block == 2) {
             getline(infile, ins);
             max_loop_num = atoi(ins.c_str());
             getline(infile, ins);
             first_loop_window_num = atoi(ins.c_str());
         }
+        /*窗口数据载入*/
         else if (block == 3) {
             getline(infile, ins);
             window_num = atoi(ins.c_str());
@@ -83,6 +87,7 @@ void Data::Read_file(string& path)
                 outs.clear();
             }
         }
+        /*设备数据载入*/
         else if (block == 4) {
             getline(infile, ins);
             device_num = atoi(ins.c_str());
@@ -98,6 +103,7 @@ void Data::Read_file(string& path)
                 outs.clear();
             }
         }
+        /*流水图数据载入及设备节点的输入输出*/
         else if (block == 5) {
             getline(infile, ins);
             linegraph.edge_num = atoi(ins.c_str());
@@ -107,10 +113,15 @@ void Data::Read_file(string& path)
                 vector<int> oneline;
                 for (int j = 0; j < 3; j++)
                     oneline.push_back(atoi(outs[j].c_str()));
+                int from = atoi(outs[1].c_str());
+                int to = atoi(outs[2].c_str());
+                device_data[from].next_device.push_back(&device_data[to]);//插入第一个节点的next_device
+                device_data[to].last_device.push_back(&device_data[from]);//插入第二个节点的last_device
                 linegraph.graph_data.push_back(oneline);
                 outs.clear();
             }
         }
+        /*核心流水线和邻接矩阵*/
         else if (block == 6) {
             getline(infile, ins);
             coreline.edge_num = atoi(ins.c_str());
@@ -134,35 +145,50 @@ void Data::Read_file(string& path)
 
 
 void Data::Data_Choose() {
-    for (int i = 0; i < device_num; i++) {
-        Dev_Match dev;
-        dev.dev_id = i;
-        //核心流水线设备类型与窗口支持预处理的筛选
+    /*核心流水线设备类型与窗口支持预处理的筛选*/
+    for (int i = 0; i < coreline.core_devices.size(); i++) {
+        int core = coreline.core_devices[i];
         for (int w = 0; w < window_num; w++) {
-            dev.dev_win.push_back(w);
-            if (device_data[i].is_core_device && window_data[w].preprocess_device[device_data[i].type] == false)
-                dev.dev_win.pop_back();
+            if (device_data[core].is_core_device && window_data[w].preprocess_device[device_data[i].type] == true)
+                device_data[core].surport_window.insert(w);
         }
-        //设备支持能源与区域能源的筛选
+    }
+    /*窗口支持区域的筛选*/
+    for (int i = 0; i < window_num; i++) {
         for (int r = 0; r < area_num; r++) {
-            if (device_data[i].energy_install_cost[area_data[r].energy_type] != 0)
-                dev.dev_area.push_back(r);
+            if (window_data[i].workershop_index == area_data[r].workershop_index)
+                //这里有可能会出现往set里重复插入相同的能源类型，不过测试插入相同的并不会冲突，而且只会插入一次
+                window_data[i].support_energy.insert(area_data[r].energy_type);  
         }
-        dev_match.push_back(dev);
+    }
+    /*寻找头结点*/
+    for (int i = 0; i < device_num; i++) {
+        if (device_data[i].last_device.size() == 0) {
+            linegraph.first_device = &device_data[i];
+            break;
+        }
+    }
+    /*展开回环窗口*/
+    for (int out_slp = 0; out_slp < max_loop_num + 1; out_slp++){
+        for (int loop = 0; loop < first_loop_window_num; loop++) {
+            if (window_data[loop].self_loop) {
+                for (int slp = 0; slp < max_loop_num; slp++)
+                    sqread_circle.push_back(loop);
+            }
+            sqread_circle.push_back(loop);
+        }
+    }
+    for (int others = first_loop_window_num; others < window_num; others++) {
+        if (window_data[others].self_loop) {
+            for (int slp = 0; slp < max_loop_num; slp++)
+                sqread_circle.push_back(others);
+        }
+        sqread_circle.push_back(others);
     }
     return;
 }
 
 
-int main() {
-    string in_path = "./case0.in";
-    Data data;
-    data.Read_file(in_path);
-    data.Data_Choose();
-    data.linegraph.Tree_Graph();
-    cout << data.dev_match.size() << endl;
-    return 0;
-}
 
 
 
