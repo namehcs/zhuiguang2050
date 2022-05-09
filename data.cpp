@@ -149,7 +149,7 @@ void Data::Data_Choose() {
     for (int i = 0; i < coreline.core_devices.size(); i++) {
         int core = coreline.core_devices[i];
         for (int w = 0; w < window_num; w++) {
-            if (device_data[core].is_core_device && window_data[w].preprocess_device[device_data[i].type] == true)
+            if (device_data[core].is_core_device && window_data[w].preprocess_device[device_data[core].type] == true)
                 device_data[core].surport_window.insert(w);
         }
     }

@@ -26,9 +26,9 @@ void Result::Algorithm(Data& data) {
 
 		/*判断能否放入当前窗口*/
 		cur_wind = data.sqread_circle[cur_wind_index];
-		bool match_cur_wind = Check_Match(data, cur_dev, cur_wind, 0);
+		bool match_cur_wind = Check_Match(data, cur_dev, cur_wind, cur_wind_index, 0);
 		if (!match_cur_wind) {
-			L2.push(cur_dev);
+			L2.push(cur_dev);//(cur_wind_index)?
 			continue; //检查这里是不是不执行下面的，跳到下个循环了
 		}
 		installed_window[0][cur_dev] = cur_wind_index;  //这里只取了第一个，生成一种匹配方案
@@ -42,6 +42,8 @@ void Result::Algorithm(Data& data) {
 			else
 				continue;
 		}
+		if (L1.empty())
+			cur_wind_index++;
 
 		/*判断子节点们是否是特殊节点*/
 		for (int i = 0; i < data.device_data[cur_dev].next_device.size(); i++) {
@@ -70,17 +72,17 @@ queue<int> Result::Choose_Window(Data& data, int dev_indev, int cur_wind_index) 
 判断当前设备和窗口能不能匹配
 注意：这里的wind_index是窗口号，不是展开后窗口序列编号
 **********************************************************************************************/
-bool Result::Check_Match(Data& data, int dev_index, int wind_index, int match_index) {
+bool Result::Check_Match(Data& data, int dev_index, int wind, int wind_index, int match_index) {
 	bool result = true;
 	/*检查是否核心设备，以及核心设备的支持窗口是否包含wind_index*/
 	if (data.device_data[dev_index].is_core_device &&
-		data.device_data[dev_index].surport_window.find(wind_index) ==
+		data.device_data[dev_index].surport_window.find(wind) ==
 		data.device_data[dev_index].surport_window.end())  //指向空，没找到
 		return false;
 
 	/*检查 当前设备 与 窗口支持能源 匹配情况*/
-	if (data.window_data[wind_index].support_energy.find(data.device_data[dev_index].type) ==
-		data.window_data[wind_index].support_energy.end())  //指向空，没找到
+	if (data.window_data[wind].support_energy.find(data.device_data[dev_index].type) ==
+		data.window_data[wind].support_energy.end())  //指向空，没找到
 		return false;
 
 	/*检查当前设备所有输入设备的窗口索引是否小于当前匹配窗口索引，协同设备可以等于*/
