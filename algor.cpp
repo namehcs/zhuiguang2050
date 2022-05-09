@@ -16,6 +16,8 @@ void Result::Algorithm(Data& data) {
 	while (!iter_end) {
 		if (L1.empty()) {
 			L1 = L2;
+			while (!L2.empty())
+				L2.pop();
 			cur_wind_index++;
 		}
 		cur_dev = L1.front();
@@ -29,6 +31,7 @@ void Result::Algorithm(Data& data) {
 		bool match_cur_wind = Check_Match(data, cur_dev, cur_wind, cur_wind_index, 0);
 		if (!match_cur_wind) {
 			L2.push(cur_dev);//(cur_wind_index)?
+			L1.pop();
 			continue; //检查这里是不是不执行下面的，跳到下个循环了
 		}
 		installed_window[0][cur_dev] = cur_wind_index;  //这里只取了第一个，生成一种匹配方案
@@ -81,8 +84,13 @@ bool Result::Check_Match(Data& data, int dev_index, int wind, int wind_index, in
 		return false;
 
 	/*检查 当前设备 与 窗口支持能源 匹配情况*/
-	if (data.window_data[wind].support_energy.find(data.device_data[dev_index].type) ==
-		data.window_data[wind].support_energy.end())  //指向空，没找到
+	int flag = 0;
+	for (int i = 0; i < data.device_data[dev_index].surport_energy.size(); i++) {
+		if (data.window_data[wind].support_energy.find(data.device_data[dev_index].surport_energy[i]) ==
+			data.window_data[wind].support_energy.end())  //指向空，没找到
+			flag++;
+	}
+	if (flag == data.device_data[dev_index].surport_energy.size())
 		return false;
 
 	/*检查当前设备所有输入设备的窗口索引是否小于当前匹配窗口索引，协同设备可以等于*/

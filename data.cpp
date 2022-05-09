@@ -97,8 +97,11 @@ void Data::Read_file(string& path)
                 getline(infile, ins);
                 SplitString(ins, outs, " ");
                 Device device(i, atoi(outs[0].c_str()), false);
-                for (int j = 1; j < 6; j++)
+                for (int j = 1; j < 6; j++) {
                     device.energy_install_cost.push_back(atoi(outs[j].c_str()));
+                    if (atoi(outs[j].c_str()) != 0)
+                        device.surport_energy.push_back(j - 1);
+                }
                 device_data.push_back(device);
                 outs.clear();
             }

@@ -53,6 +53,7 @@ public:
     vector<int> energy_install_cost; //初始化时读入
     vector<Device*> next_device; //graph初始化时读入
     vector<Device*> last_device; //graph初始化时读入
+    vector<int> surport_energy;
     set<int> surport_window; //Data_Choose时读入
 
     Device(int index, int type, bool is_core_device) :
