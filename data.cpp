@@ -156,12 +156,14 @@ void Data::Data_Choose() {
                 device_data[core].surport_window.insert(w);
         }
     }
-    /*窗口支持区域的筛选*/
+    /*窗口支持能源及区域的筛选*/
     for (int i = 0; i < window_num; i++) {
         for (int r = 0; r < area_num; r++) {
-            if (window_data[i].workershop_index == area_data[r].workershop_index)
+            if (window_data[i].workershop_index == area_data[r].workershop_index) {
                 //这里有可能会出现往set里重复插入相同的能源类型，不过测试插入相同的并不会冲突，而且只会插入一次
-                window_data[i].support_energy.insert(area_data[r].energy_type);  
+                window_data[i].support_energy.insert(area_data[r].energy_type);
+                window_data[i].support_area.push_back(area_data[r].index);
+            }
         }
     }
     /*寻找头结点*/

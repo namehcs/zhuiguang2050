@@ -9,7 +9,8 @@ int main() {
     data.Read_file(in_path);
     data.Data_Choose();
     data.linegraph.Tree_Graph();
-    cout << data.device_data.size() << endl;
-    result.Algorithm(data);
+    result.Window_Algorithm(data);
+    result.Area_Algorithm(data);
+    result.Output(data);
     return 0;
 }

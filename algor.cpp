@@ -1,10 +1,9 @@
 #include "algor.h"
 
 /**********************************************************************************************
-判断当前设备和窗口能不能匹配
-注意：这里的wind_index是窗口号，不是展开后窗口序列编号
+窗口匹配算法
 **********************************************************************************************/
-void Result::Algorithm(Data& data) {
+void Result::Window_Algorithm(Data& data) {
 	bool iter_end = false;
 	int cur_dev, cur_wind, cur_wind_index = 0;
     //要检查一下这里是不是正常添加了一组空匹配，检查好后本句删除
@@ -61,6 +60,62 @@ void Result::Algorithm(Data& data) {
 			}
 		}
 	}
+}
+
+/**********************************************************************************************
+区域匹配算法
+**********************************************************************************************/
+void Result::Area_Algorithm(Data& data) {
+	int dev_wind, area, energy_type;
+	vector<long> dev_install_cost(data.device_num, LONG_MAX);
+	for (int i = 0; i < installed_window.size(); i++) {
+		installed_area.push_back(vector<int>(data.device_num, 999));
+		for (int dev = 0; dev < installed_window[i].size(); dev++) {
+			dev_wind = data.sqread_circle[installed_window[i][dev]];
+			/*看每个窗口里支持的区域是否能安装该设备，能安装且费用小于上一个就更新该设备的费用*/
+			for (int j = 0; j < data.window_data[dev_wind].support_area.size(); j++) {
+				area = data.window_data[dev_wind].support_area[j];
+				energy_type = data.area_data[area].energy_type;
+				if (data.device_data[dev].energy_install_cost[energy_type] > 0 && 
+					data.device_data[dev].energy_install_cost[energy_type] < dev_install_cost[dev])
+				{
+					dev_install_cost[dev] = data.device_data[dev].energy_install_cost[energy_type];
+					installed_area[i][dev] = area;
+				}
+			}
+		}
+		/*计算一个区域匹配的安装成本*/
+		long dev_cost = 0;
+		for (int c = 0; c < data.device_num; c++) {
+			dev_cost += dev_install_cost[c];
+		}
+	}
+}
+
+/**********************************************************************************************
+结果输出
+**********************************************************************************************/
+void Result::Output(Data& data) {
+	/*仪器的数量*/
+	cout << data.device_num << endl;
+
+	/*仪器安装的车间区域下标的数组*/
+	for (int i = 0; i < data.device_num - 1; i++) {
+		cout << installed_area[0][i] << " ";
+	}
+	cout << installed_area[0][data.device_num - 1] << endl;
+
+	/*流水线的步骤数*/
+	cout << data.coreline.core_devices.size() << endl;
+
+	/*流水线的窗口下标的数组*/
+	int core, wind;
+	for (int i = 0; i < data.coreline.core_devices.size() - 1; i++) {
+		core = data.coreline.core_devices[i];
+		cout << data.sqread_circle[installed_window[0][core]] << " ";
+	}
+	core = data.coreline.core_devices[data.coreline.core_devices.size() - 1];
+	cout << data.sqread_circle[installed_window[0][core]] << endl;
 }
 
 /*返回的是回环窗口序列的*/

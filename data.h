@@ -21,6 +21,7 @@ public:
 
     vector<bool> preprocess_device;  //初始化时读入
     set<int> support_energy;  //Data_Choose时读入
+    vector<int> support_area;  //Data_Choose时读入
     vector<int> already_installed_device;
 
     Window(int index, int self_loop, int workershop_index, int cost_coefficient) :
@@ -34,7 +35,7 @@ public:
     int workershop_index;  //初始化时读入
     int window_index;
     int energy_type;  //初始化时读入
-    vector<int> support_device;
+
     vector<int> already_installed_device;
 
     Area(int index, int workershop_index, int window_index, int energy_type) :
@@ -47,14 +48,13 @@ public:
     int index;  //初始化时读入
     int type;  //初始化时读入
     bool is_core_device;  //初始化时读入
-    //int distance_from_first;
-
-    //int distance_from_last;
-    vector<int> energy_install_cost; //初始化时读入
+    vector<long> energy_install_cost; //初始化时读入
     vector<Device*> next_device; //graph初始化时读入
     vector<Device*> last_device; //graph初始化时读入
-    vector<int> surport_energy;
+
+    vector<int> surport_energy; //初始化时读入
     set<int> surport_window; //Data_Choose时读入
+
 
     Device(int index, int type, bool is_core_device) :
         index(index), type(type), is_core_device(is_core_device) {}
