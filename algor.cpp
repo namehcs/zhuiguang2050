@@ -30,7 +30,7 @@ void Result::Algorithm(Data& data) {
 		cur_wind = data.sqread_circle[cur_wind_index];
 		bool match_cur_wind = Check_Match(data, cur_dev, cur_wind, cur_wind_index, 0);
 		if (!match_cur_wind) {
-			L2.push(cur_dev);//(cur_wind_index)?
+			L2.push(cur_dev);
 			L1.pop();
 			continue; //检查这里是不是不执行下面的，跳到下个循环了
 		}
@@ -45,8 +45,6 @@ void Result::Algorithm(Data& data) {
 			else
 				continue;
 		}
-		if (L1.empty())
-			cur_wind_index++;
 
 		/*判断子节点们是否是特殊节点*/
 		for (int i = 0; i < data.device_data[cur_dev].next_device.size(); i++) {
