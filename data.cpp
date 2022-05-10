@@ -31,53 +31,50 @@ void LineGraph::Tree_Graph() {
     }
 }
 
-void Data::Read_file(string& path)
+void Data::Read_file()
 {
-    ifstream infile(path);
-    if (!infile.is_open()) cout << "can't open file " << path << endl;
     string ins;
     vector<string> outs;
-    int block = 0;
     for (int block = 0; block < 7; block++) {
         outs.clear();
-        /*¼Ó¹¤µü´ú´ÎÊýºÍÄÜÔ´¼Ó¹¤Ê±³¤*/
+        /*åŠ å·¥è¿­ä»£æ¬¡æ•°å’Œèƒ½æºåŠ å·¥æ—¶é•¿*/
         if (block == 0) {
-            getline(infile, ins);
+            getline(cin, ins);
             coreline.production_times = atoi(ins.c_str());
 
-            getline(infile, ins);
+            getline(cin, ins);
             SplitString(ins, outs, " ");
             for (string p : outs)
                 device_process_time.push_back(atoi(p.c_str()));
         }
-        /*ÇøÓòÊý¾ÝÔØÈë*/
+        /*åŒºåŸŸæ•°æ®è½½å…¥*/
         else if (block == 1) {
-            getline(infile, ins);
+            getline(cin, ins);
             workershop_num = atoi(ins.c_str());
 
-            getline(infile, ins);
+            getline(cin, ins);
             area_num = atoi(ins.c_str());
             for (int i = 0; i < area_num; i++) {
-                getline(infile, ins);
+                getline(cin, ins);
                 SplitString(ins, outs, " ");
                 Area area(i, atoi(outs[0].c_str()), 0, atoi(outs[1].c_str()));
                 area_data.push_back(area);
                 outs.clear();
             }
         }
-        /*»·»Ø*/
+        /*çŽ¯å›ž*/
         else if (block == 2) {
-            getline(infile, ins);
+            getline(cin, ins);
             max_loop_num = atoi(ins.c_str());
-            getline(infile, ins);
+            getline(cin, ins);
             first_loop_window_num = atoi(ins.c_str());
         }
-        /*´°¿ÚÊý¾ÝÔØÈë*/
+        /*çª—å£æ•°æ®è½½å…¥*/
         else if (block == 3) {
-            getline(infile, ins);
+            getline(cin, ins);
             window_num = atoi(ins.c_str());
             for (int i = 0; i < window_num; i++) {
-                getline(infile, ins);
+                getline(cin, ins);
                 SplitString(ins, outs, " ");
                 Window wind(i, atoi(outs[0].c_str()), atoi(outs[1].c_str()), atoi(outs[2].c_str()));
                 for (int j = 3; j < 6; j++) {
@@ -87,14 +84,15 @@ void Data::Read_file(string& path)
                 outs.clear();
             }
         }
-        /*Éè±¸Êý¾ÝÔØÈë*/
+        /*è®¾å¤‡æ•°æ®è½½å…¥*/
         else if (block == 4) {
-            getline(infile, ins);
+            getline(cin, ins);
             device_num = atoi(ins.c_str());
+            have_installed_device_num = 0ï¼›
             linegraph.adjacent_matrix.resize(device_num);
             for (int i = 0; i < device_num; i++) {
                 linegraph.adjacent_matrix[i].resize(device_num);
-                getline(infile, ins);
+                getline(cin, ins);
                 SplitString(ins, outs, " ");
                 Device device(i, atoi(outs[0].c_str()), false);
                 for (int j = 1; j < 6; j++) {
@@ -106,29 +104,29 @@ void Data::Read_file(string& path)
                 outs.clear();
             }
         }
-        /*Á÷Ë®Í¼Êý¾ÝÔØÈë¼°Éè±¸½ÚµãµÄÊäÈëÊä³ö*/
+        /*æµæ°´å›¾æ•°æ®è½½å…¥åŠè®¾å¤‡èŠ‚ç‚¹çš„è¾“å…¥è¾“å‡º*/
         else if (block == 5) {
-            getline(infile, ins);
+            getline(cin, ins);
             linegraph.edge_num = atoi(ins.c_str());
             for (int i = 0; i < linegraph.edge_num; i++) {
-                getline(infile, ins);
+                getline(cin, ins);
                 SplitString(ins, outs, " ");
                 vector<int> oneline;
                 for (int j = 0; j < 3; j++)
                     oneline.push_back(atoi(outs[j].c_str()));
                 int from = atoi(outs[1].c_str());
                 int to = atoi(outs[2].c_str());
-                device_data[from].next_device.push_back(&device_data[to]);//²åÈëµÚÒ»¸ö½ÚµãµÄnext_device
-                device_data[to].last_device.push_back(&device_data[from]);//²åÈëµÚ¶þ¸ö½ÚµãµÄlast_device
+                device_data[from].next_device.push_back(&device_data[to]);//æ’å…¥ç¬¬ä¸€ä¸ªèŠ‚ç‚¹çš„next_device
+                device_data[to].last_device.push_back(&device_data[from]);//æ’å…¥ç¬¬äºŒä¸ªèŠ‚ç‚¹çš„last_device
                 linegraph.graph_data.push_back(oneline);
                 outs.clear();
             }
         }
-        /*ºËÐÄÁ÷Ë®ÏßºÍÁÚ½Ó¾ØÕó*/
+        /*æ ¸å¿ƒæµæ°´çº¿å’Œé‚»æŽ¥çŸ©é˜µ*/
         else if (block == 6) {
-            getline(infile, ins);
+            getline(cin, ins);
             coreline.edge_num = atoi(ins.c_str());
-            getline(infile, ins);
+            getline(cin, ins);
             SplitString(ins, outs, " ");
             int core_line = atoi(outs[0].c_str());
             int core_device = linegraph.graph_data[core_line][1];
@@ -143,37 +141,60 @@ void Data::Read_file(string& path)
             }
         }
     }
-    infile.close();
 }
 
 
 void Data::Data_Choose() {
-    /*ºËÐÄÁ÷Ë®ÏßÉè±¸ÀàÐÍÓë´°¿ÚÖ§³ÖÔ¤´¦ÀíµÄÉ¸Ñ¡*/
-    for (int i = 0; i < coreline.core_devices.size(); i++) {
-        int core = coreline.core_devices[i];
-        for (int w = 0; w < window_num; w++) {
-            if (device_data[core].is_core_device && window_data[w].preprocess_device[device_data[core].type] == true)
-                device_data[core].surport_window.insert(w);
-        }
-    }
-    /*´°¿ÚÖ§³ÖÄÜÔ´¼°ÇøÓòµÄÉ¸Ñ¡*/
+    ///*æ ¸å¿ƒæµæ°´çº¿è®¾å¤‡ç±»åž‹ä¸Žçª—å£æ”¯æŒé¢„å¤„ç†çš„ç­›é€‰*/
+    //for (int i = 0; i < coreline.core_devices.size(); i++) {
+    //    int core = coreline.core_devices[i];
+    //    for (int w = 0; w < window_num; w++) {
+    //        if (device_data[core].is_core_device && window_data[w].preprocess_device[device_data[core].type] == true)
+    //            device_data[core].surport_window.insert(w);
+    //    }
+    //}
+
+    /*çª—å£æ”¯æŒèƒ½æºåŠåŒºåŸŸçš„ç­›é€‰*/
     for (int i = 0; i < window_num; i++) {
         for (int r = 0; r < area_num; r++) {
             if (window_data[i].workershop_index == area_data[r].workershop_index) {
-                //ÕâÀïÓÐ¿ÉÄÜ»á³öÏÖÍùsetÀïÖØ¸´²åÈëÏàÍ¬µÄÄÜÔ´ÀàÐÍ£¬²»¹ý²âÊÔ²åÈëÏàÍ¬µÄ²¢²»»á³åÍ»£¬¶øÇÒÖ»»á²åÈëÒ»´Î
+                //è¿™é‡Œæœ‰å¯èƒ½ä¼šå‡ºçŽ°å¾€seté‡Œé‡å¤æ’å…¥ç›¸åŒçš„èƒ½æºç±»åž‹ï¼Œä¸è¿‡æµ‹è¯•æ’å…¥ç›¸åŒçš„å¹¶ä¸ä¼šå†²çªï¼Œè€Œä¸”åªä¼šæ’å…¥ä¸€æ¬¡
                 window_data[i].support_energy.insert(area_data[r].energy_type);
                 window_data[i].support_area.push_back(area_data[r].index);
             }
         }
     }
-    /*Ñ°ÕÒÍ·½áµã*/
-    for (int i = 0; i < device_num; i++) {
-        if (device_data[i].last_device.size() == 0) {
-            linegraph.first_device = &device_data[i];
-            break;
+
+    /*è®¾å¤‡æ”¯æŒçš„çª—å£åŠåŒºåŸŸç­›é€‰*/
+    for (int i = 0; i < device_data.size(); i++)
+    {
+        for (int w = 0; w < window_num; w++) {
+            //çª—å£éœ€è¦æ”¯æŒé¢„åŠ å·¥//å¦‚æžœä¸æ˜¯æ ¸å¿ƒè®¾å¤‡å°±ä¸ç”¨
+            if (window_data[w].preprocess_device[device_data[i].type] || !device_data[i].is_core_device) {
+                //çœ‹çœ‹æœ‰æ²¡æœ‰åŒºåŸŸå¯ä»¥æ”¯æŒ
+                for (int a = 0; a < window_data[w].support_area.size(); a++)
+                {
+                    //åˆ¤æ–­èƒ½æºèƒ½å¦åŒ¹é…
+                    int area_index = window_data[w].support_area[a];
+                    if (device_data[i].surport_energy.find(area_data[area_index].energy_type) == device_data[i].surport_energy.end())
+                        continue;
+                    else
+                    {
+                        device_data[i].surport_window[w].emplace_back(a);
+                    }
+                }
+            }
         }
     }
-    /*Õ¹¿ª»Ø»·´°¿Ú*/
+
+    /*å¯»æ‰¾å¤´ç»“ç‚¹*/
+    for (int i = 0; i < device_num; i++) {
+        if (device_data[i].last_device.size() == 0) {
+            linegraph.first_device.push_back(&device_data[i]);
+        }
+    }
+
+    /*å±•å¼€å›žçŽ¯çª—å£*/
     for (int out_slp = 0; out_slp < max_loop_num + 1; out_slp++){
         for (int loop = 0; loop < first_loop_window_num; loop++) {
             if (window_data[loop].self_loop) {
@@ -183,6 +204,7 @@ void Data::Data_Choose() {
             sqread_circle.push_back(loop);
         }
     }
+
     for (int others = first_loop_window_num; others < window_num; others++) {
         if (window_data[others].self_loop) {
             for (int slp = 0; slp < max_loop_num; slp++)
@@ -192,11 +214,3 @@ void Data::Data_Choose() {
     }
     return;
 }
-
-
-
-
-
-
-
-

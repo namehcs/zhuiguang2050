@@ -1,27 +1,29 @@
 #pragma once
 #include <iostream>
 #include <set>
-#include <unordered_map>
 #include <vector>
 #include <fstream>
 #include <string>
+#include <unordered_map>
 
 using namespace std;
 
 /*
-Éè±¸Êı¾İ½á¹¹£ºÉè±¸ÀàĞÍdev_class£¬Éè±¸ËùÊô´°¿Údev_win£¬Éè±¸ËùÊô³µ¼ädev_workshop£¬Éè±¸ËùÊôÇøÓòdev_area
+è®¾å¤‡æ•°æ®ç»“æ„ï¼šè®¾å¤‡ç±»å‹dev_classï¼Œè®¾å¤‡æ‰€å±çª—å£dev_winï¼Œè®¾å¤‡æ‰€å±è½¦é—´dev_workshopï¼Œè®¾å¤‡æ‰€å±åŒºåŸŸdev_area
 */
 
 class Window {
 public:
-    int index;  //³õÊ¼»¯Ê±¶ÁÈë
-    bool self_loop;  //³õÊ¼»¯Ê±¶ÁÈë
-    int workershop_index;  //³õÊ¼»¯Ê±¶ÁÈë
-    int cost_coefficient;  //³õÊ¼»¯Ê±¶ÁÈë
+    int index;  //åˆå§‹åŒ–æ—¶è¯»å…¥
+    bool self_loop;  //åˆå§‹åŒ–æ—¶è¯»å…¥
+    int workershop_index;  //åˆå§‹åŒ–æ—¶è¯»å…¥
+    int cost_coefficient;  //åˆå§‹åŒ–æ—¶è¯»å…¥
+    int process_time;
+    int in_times;
 
-    vector<bool> preprocess_device;  //³õÊ¼»¯Ê±¶ÁÈë
-    set<int> support_energy;  //Data_ChooseÊ±¶ÁÈë
-    vector<int> support_area;  //Data_ChooseÊ±¶ÁÈë
+    vector<bool> preprocess_device;  //åˆå§‹åŒ–æ—¶è¯»å…¥
+    set<int> support_energy;  //Data_Chooseæ—¶è¯»å…¥
+    vector<int> support_area;  //Data_Chooseæ—¶è¯»å…¥
     vector<int> already_installed_device;
 
     Window(int index, int self_loop, int workershop_index, int cost_coefficient) :
@@ -31,10 +33,10 @@ public:
 
 class Area {
 public:
-    int index;  //³õÊ¼»¯Ê±¶ÁÈë
-    int workershop_index;  //³õÊ¼»¯Ê±¶ÁÈë
+    int index;  //åˆå§‹åŒ–æ—¶è¯»å…¥
+    int workershop_index;  //åˆå§‹åŒ–æ—¶è¯»å…¥
     int window_index;
-    int energy_type;  //³õÊ¼»¯Ê±¶ÁÈë
+    int energy_type;  //åˆå§‹åŒ–æ—¶è¯»å…¥
 
     vector<int> already_installed_device;
 
@@ -45,15 +47,18 @@ public:
 
 class Device {
 public:
-    int index;  //³õÊ¼»¯Ê±¶ÁÈë
-    int type;  //³õÊ¼»¯Ê±¶ÁÈë
-    bool is_core_device;  //³õÊ¼»¯Ê±¶ÁÈë
-    vector<long> energy_install_cost; //³õÊ¼»¯Ê±¶ÁÈë
-    vector<Device*> next_device; //graph³õÊ¼»¯Ê±¶ÁÈë
-    vector<Device*> last_device; //graph³õÊ¼»¯Ê±¶ÁÈë
-
-    vector<int> surport_energy; //³õÊ¼»¯Ê±¶ÁÈë
-    set<int> surport_window; //Data_ChooseÊ±¶ÁÈë
+    int index;  //åˆå§‹åŒ–æ—¶è¯»å…¥
+    int type;  //åˆå§‹åŒ–æ—¶è¯»å…¥
+    int installed_area;
+    int install_cost;
+    bool is_core_device;  //åˆå§‹åŒ–æ—¶è¯»å…¥
+    vector<long> energy_install_cost; //åˆå§‹åŒ–æ—¶è¯»å…¥
+    vector<Device*> next_device; //graphåˆå§‹åŒ–æ—¶è¯»å…¥
+    vector<Device*> last_device; //graphåˆå§‹åŒ–æ—¶è¯»å…¥
+    
+    set<int> surport_energy; //åˆå§‹åŒ–æ—¶è¯»å…¥
+    //set<int> surport_window; //Data_Chooseæ—¶è¯»å…¥
+    unordered_map<int, vector<int>> surport_window;//çª—å£+åŒºåŸŸ
 
 
     Device(int index, int type, bool is_core_device) :
@@ -63,42 +68,42 @@ public:
 
 class CoreLine {
 public:
-    int edge_num;//Á÷Ë®ÏßµÄ±ßÊı, ³õÊ¼»¯Ê±¶ÁÈë
-    int production_times; //³õÊ¼»¯Ê±¶ÁÈë
-    vector<int> edge_array;//Á÷Ë®ÏßµÄ±ßÏÂ±êÊı×é,³õÊ¼»¯Ê±¶ÁÈë
-    vector<int> core_devices; //³õÊ¼»¯Ê±¶ÁÈë
+    int edge_num;//æµæ°´çº¿çš„è¾¹æ•°, åˆå§‹åŒ–æ—¶è¯»å…¥
+    int production_times; //åˆå§‹åŒ–æ—¶è¯»å…¥
+    vector<int> edge_array;//æµæ°´çº¿çš„è¾¹ä¸‹æ ‡æ•°ç»„,åˆå§‹åŒ–æ—¶è¯»å…¥
+    vector<int> core_devices; //åˆå§‹åŒ–æ—¶è¯»å…¥
     vector<int> not_installed_device;
 };
 
 class LineGraph {
 public:
-    int edge_num;   //³õÊ¼»¯Ê±¶ÁÈë
-    vector<vector<int>> graph_data;  //³õÊ¼»¯Ê±¶ÁÈë
-    vector<vector<int>> adjacent_matrix;  //³õÊ¼»¯Ê±¶ÁÈë
+    int edge_num;   //åˆå§‹åŒ–æ—¶è¯»å…¥
+    vector<vector<int>> graph_data;  //åˆå§‹åŒ–æ—¶è¯»å…¥
+    vector<vector<int>> adjacent_matrix;  //åˆå§‹åŒ–æ—¶è¯»å…¥
     void Tree_Graph();
-    Device* first_device;
+    vector<Device*> first_device;
 };
 
 class Data {
 public:
-    vector<Window> window_data;  //³õÊ¼»¯Ê±¶ÁÈë
-    vector<Area> area_data;  //³õÊ¼»¯Ê±¶ÁÈë
-    vector<Device> device_data;  //³õÊ¼»¯Ê±¶ÁÈë
+    vector<Window> window_data;  //åˆå§‹åŒ–æ—¶è¯»å…¥
+    vector<Area> area_data;  //åˆå§‹åŒ–æ—¶è¯»å…¥
+    vector<Device> device_data;  //åˆå§‹åŒ–æ—¶è¯»å…¥
 
     void Data_Choose();
-    void Read_file(string& path);
+    void Read_file();
     LineGraph linegraph;
     CoreLine coreline;
     
 
 public:
-    int workershop_num;  //³õÊ¼»¯Ê±¶ÁÈë
-    int max_loop_num;  //³õÊ¼»¯Ê±¶ÁÈë
-    int first_loop_window_num;  //³õÊ¼»¯Ê±¶ÁÈë
-    int window_num;  //³õÊ¼»¯Ê±¶ÁÈë
-    int device_num;  //³õÊ¼»¯Ê±¶ÁÈë
-    int area_num;    //³õÊ¼»¯Ê±¶ÁÈë
-    unordered_map<int, int> workershop_window_table;//³µ¼äºÍ´°¿ÚµÄ¶ÔÓ¦±í
-    vector<int> device_process_time;//ÒÇÆ÷Ê¹ÓÃ5ÖÖÄÜÔ´µÄ¼Ó¹¤Ê±¼ä  ³õÊ¼»¯Ê±¶ÁÈë
-    vector<int> sqread_circle; //Data_ChooseÊ±¶ÁÈë
+    int workershop_num;  //åˆå§‹åŒ–æ—¶è¯»å…¥
+    int max_loop_num;  //åˆå§‹åŒ–æ—¶è¯»å…¥
+    int first_loop_window_num;  //åˆå§‹åŒ–æ—¶è¯»å…¥
+    int window_num;  //åˆå§‹åŒ–æ—¶è¯»å…¥
+    int device_num;  //åˆå§‹åŒ–æ—¶è¯»å…¥
+    int have_installed_device_num;  //å·²ç»å®‰è£…çš„è®¾å¤‡æ•°é‡
+    int area_num;    //åˆå§‹åŒ–æ—¶è¯»å…¥
+    vector<int> device_process_time;//ä»ªå™¨ä½¿ç”¨5ç§èƒ½æºçš„åŠ å·¥æ—¶é—´  åˆå§‹åŒ–æ—¶è¯»å…¥
+    vector<int> sqread_circle; //Data_Chooseæ—¶è¯»å…¥
 };

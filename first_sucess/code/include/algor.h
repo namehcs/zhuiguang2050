@@ -11,7 +11,7 @@ public:
     void Area_Algorithm(Data& data);
     void Output(Data& data);
 private:
-    long LONG_MAX = 2147483647;
+    //long LONG_MAX = 2147483647;
     queue<int> Choose_Window(Data& data, int dev_indev, int cur_wind_index);
     bool Check_Match(Data& data, int dev_index, int wind, int wind_index, int match_index);
 

@@ -5,18 +5,16 @@
 
 class Result:public Data {
 public:
-    vector<vector<int>> installed_window; //½á¹û£ºÉè±¸°²×°´°¿Ú
-    vector<vector<int>> installed_area; //½á¹û£ºÉè±¸°²×°ÇøÓò
+    vector<vector<int>> installed_window; //ç»“æœï¼šè®¾å¤‡å®‰è£…çª—å£
+    vector<vector<int>> installed_area; //ç»“æœï¼šè®¾å¤‡å®‰è£…åŒºåŸŸ
     void Window_Algorithm(Data& data);
     void Area_Algorithm(Data& data);
+    void install_device(Data& data, int device_index, int area_index);
     void Output(Data& data);
 private:
+    long LONG_MAX = 2147483647;
     queue<int> Choose_Window(Data& data, int dev_indev, int cur_wind_index);
     bool Check_Match(Data& data, int dev_index, int wind, int wind_index, int match_index);
 
 };
-
-
-
-
 
