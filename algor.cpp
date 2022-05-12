@@ -1,16 +1,39 @@
 #include "algor.h"
 
+
 /**********************************************************************************************
-çª—å£åŒ¹é…ç®—æ³•
+µü´ú¼°ÓÅ»¯Ëã·¨
 **********************************************************************************************/
-void Result::Window_Algorithm(Data& data) {
+void Result::Algorithm(Data& data, int line_num) {
+	int res_index = 0;
+	int size_sqreadline = data.sqread_circle.size();
+	line_num = std::min(line_num, size_sqreadline);
+	for (int line = 0; line < line_num; line++) {
+		installed_window.push_back(vector<int>(data.device_num, 999)); 
+		installed_area.push_back(vector<int>(data.device_num, 999));
+		bool flag_res = Install_Match(data, line, res_index);
+		if (flag_res) {
+			Output(data);
+			//¼ÆËãÕâ¸öres_indexµÄ´ú¼Û£¬²¢Ñ¡Ôñ´ú¼Û×îĞ¡µÄÆ¥Åä½á¹û
+		}
+	}
+
+}
+
+
+/**********************************************************************************************
+´°¿ÚÆ¥ÅäËã·¨
+**********************************************************************************************/
+bool Result::Install_Match(Data& data, int line, int res) {
+	bool valid_result = true;
 	int cur_dev, cur_wind, cur_wind_index = 0;
-    //è¦æ£€æŸ¥ä¸€ä¸‹è¿™é‡Œæ˜¯ä¸æ˜¯æ­£å¸¸æ·»åŠ äº†ä¸€ç»„ç©ºåŒ¹é…ï¼Œæ£€æŸ¥å¥½åæœ¬å¥åˆ é™¤
-	installed_window.push_back(vector<int>(data.device_num, 999)); 
-	vector<int> done_lastnum(data.device_num, 0);     //è¿‡ç¨‹å˜é‡ï¼šç‰¹æ®ŠèŠ‚ç‚¹å·²åŒ¹é…çš„è¾“å…¥ä¸ªæ•°
-	queue<int> L1, L2, surport_wind;
+	vector<int> done_lastnum(data.device_num, 0);     //¹ı³Ì±äÁ¿£ºÌØÊâ½ÚµãÒÑÆ¥ÅäµÄÊäÈë¸öÊı
+	queue<int> L1, L2;
+
+    /*²åÈëÍ·½Úµã*/
 	for(int f = 0; f < data.linegraph.first_device.size(); f++)
-		L1.push(data.linegraph.first_device[f]->index);  //æ’å…¥å¤´èŠ‚ç‚¹
+		L1.push(data.linegraph.first_device[f]->index); 
+
 	while (1) {
 		if (L1.empty()) {
 			L1 = L2;
@@ -20,26 +43,19 @@ void Result::Window_Algorithm(Data& data) {
 		}
 		cur_dev = L1.front();
 
-		/*å¤šä¸ªçª—å£é€‰æ‹©*/
-		//surport_wind = Choose_Window(data, cur_dev, cur_wind_index);
-		//cur_wind_index = surport_wind.front();
-
-		/*åˆ¤æ–­èƒ½å¦æ”¾å…¥å½“å‰çª—å£*/
-		if(cur_wind_index >= data.sqread_circle.size()){			
-			break;	
-		}
+		/*ÅĞ¶ÏÄÜ·ñ·ÅÈëµ±Ç°´°¿Ú*/
 		cur_wind = data.sqread_circle[cur_wind_index];
 		bool match_cur_wind = Check_Match(data, cur_dev, cur_wind, cur_wind_index, 0);
 		if (!match_cur_wind) {
 			L2.push(cur_dev);
 			L1.pop();
-			continue; //æ£€æŸ¥è¿™é‡Œæ˜¯ä¸æ˜¯ä¸æ‰§è¡Œä¸‹é¢çš„ï¼Œè·³åˆ°ä¸‹ä¸ªå¾ªç¯äº†
+			continue;
 		}
-		installed_window[0][cur_dev] = cur_wind_index;  //è¿™é‡Œåªå–äº†ç¬¬ä¸€ä¸ªï¼Œç”Ÿæˆä¸€ç§åŒ¹é…æ–¹æ¡ˆ
+		int cur_area = Area_Match(data, cur_dev, cur_wind);
+		install_device(data, cur_dev, cur_area, cur_wind_index);  //ÕâÀïÖ»È¡ÁËµÚÒ»¸ö£¬Éú³ÉÒ»ÖÖÆ¥Åä·½°¸
 		L1.pop();
-		//surport_wind.pop();
 
-		/*åˆ¤æ–­æ˜¯å¦æ˜¯ç»“æŸèŠ‚ç‚¹*/
+		/*ÅĞ¶ÏÊÇ·ñÊÇ½áÊø½Úµã*/
 		if (data.device_data[cur_dev].next_device.size() == 0) {
 			if (L1.empty() && L2.empty())
 				break;
@@ -47,134 +63,136 @@ void Result::Window_Algorithm(Data& data) {
 				continue;
 		}
 
-		/*åˆ¤æ–­å­èŠ‚ç‚¹ä»¬æ˜¯å¦æ˜¯ç‰¹æ®ŠèŠ‚ç‚¹*/
-		for (int i = 0; i < data.device_data[cur_dev].next_device.size(); i++) {
-			int son_dev = data.device_data[cur_dev].next_device[i]->index;
-			/*ä¸æ˜¯ç‰¹æ®Šè®¾å¤‡ï¼Œåˆ™å°†å­èŠ‚ç‚¹åŠ å…¥L1é˜Ÿåˆ—*/
-			if (data.device_data[son_dev].last_device.size() == 1)  //åº”è¯¥ä¸ä¼šå‡ºç°ç­‰äº0çš„æƒ…å†µ
-				L1.push(son_dev);
-			else {
-				/*æ˜¯ç‰¹æ®Šè®¾å¤‡ï¼Œåˆ™åˆ¤æ–­å­èŠ‚ç‚¹æ‰€æœ‰çš„è¾“å…¥è®¾å¤‡æ˜¯å¦éƒ½å·²å®‰è£…*/
-				if (done_lastnum[son_dev] == data.device_data[son_dev].last_device.size() - 1)
-					L1.push(son_dev);
-				else
-					done_lastnum[son_dev]++;  //æ²¡å®‰è£…å®Œå°±å…ˆç­‰ç€ï¼Œç­‰å…¨éƒ¨å®‰è£…å®Œäº†åœ¨æ”¾å…¥é˜Ÿåˆ—è¿›è¡ŒåŒ¹é…
-			}
-		}
-	}
-}
-
-/**********************************************************************************************
-åŒºåŸŸåŒ¹é…ç®—æ³•
-**********************************************************************************************/
-void Result::Area_Algorithm(Data& data) {
-	int dev_wind, area, energy_type;
-	vector<long> dev_install_cost(data.device_num, LONG_MAX);
-	for (int i = 0; i < installed_window.size(); i++) {
-		installed_area.push_back(vector<int>(data.device_num, 999));
-		for (int dev = 0; dev < installed_window[i].size(); dev++) {
-			dev_wind = data.sqread_circle[installed_window[i][dev]];
-			/*çœ‹æ¯ä¸ªçª—å£é‡Œæ”¯æŒçš„åŒºåŸŸæ˜¯å¦èƒ½å®‰è£…è¯¥è®¾å¤‡ï¼Œèƒ½å®‰è£…ä¸”è´¹ç”¨å°äºä¸Šä¸€ä¸ªå°±æ›´æ–°è¯¥è®¾å¤‡çš„è´¹ç”¨*/
-			for (int j = 0; j < data.window_data[dev_wind].support_area.size(); j++) {
-				area = data.window_data[dev_wind].support_area[j];
-				energy_type = data.area_data[area].energy_type;
-				if (data.device_data[dev].energy_install_cost[energy_type] > 0 && 
-					data.device_data[dev].energy_install_cost[energy_type] < dev_install_cost[dev])
-				{
-					dev_install_cost[dev] = data.device_data[dev].energy_install_cost[energy_type];
-					installed_area[i][dev] = area;
+		/*ÅĞ¶ÏÊÇ·ñÊÇÎŞĞ§´°¿ÚĞòÁĞ£¬²»ÄÜ·ÅÏÂËùÓĞÉè±¸*/
+		/*ºóÃæ»¹ÓĞ½Úµã£¬µ«ÊÇÒÑ¾­µ½ÁË×îºóÒ»¸ö´°¿Ú£¬Èç¹ûÇ°ºó²»ÊÇĞ­Í¬¹ØÏµµÄ»°¾ÍÊÇÎŞĞ§Æ¥Åä*/
+		if (cur_wind_index == data.sqread_circle.size() - 1){
+			for (int next = 0; next < data.device_data[cur_dev].next_device.size(); next++) {
+				if (data.linegraph.adjacent_matrix[cur_dev][data.device_data[cur_dev].next_device[next]->index != 2]) {
+					valid_result = false;
+					break;
 				}
 			}
 		}
-		/*è®¡ç®—ä¸€ä¸ªåŒºåŸŸåŒ¹é…çš„å®‰è£…æˆæœ¬*/
-		long dev_cost = 0;
-		for (int c = 0; c < data.device_num; c++) {
-			dev_cost += dev_install_cost[c];
+		if (!valid_result)//ÎŞĞ§Æ¥Åä£¬Ìø³öÑ­»·
+			break;
+
+		/*ÅĞ¶Ï×Ó½ÚµãÃÇÊÇ·ñÊÇÌØÊâ½Úµã*/
+		for (int i = 0; i < data.device_data[cur_dev].next_device.size(); i++) {
+			int son_dev = data.device_data[cur_dev].next_device[i]->index;
+			/*²»ÊÇÌØÊâÉè±¸£¬Ôò½«×Ó½Úµã¼ÓÈëL1¶ÓÁĞ*/
+			if (data.device_data[son_dev].last_device.size() == 1)  //Ó¦¸Ã²»»á³öÏÖµÈÓÚ0µÄÇé¿ö
+				L1.push(son_dev);
+			else {
+				/*ÊÇÌØÊâÉè±¸£¬ÔòÅĞ¶Ï×Ó½ÚµãËùÓĞµÄÊäÈëÉè±¸ÊÇ·ñ¶¼ÒÑ°²×°*/
+				if (done_lastnum[son_dev] == data.device_data[son_dev].last_device.size() - 1)
+					L1.push(son_dev);
+				else
+					done_lastnum[son_dev]++;  //Ã»°²×°Íê¾ÍÏÈµÈ×Å£¬µÈÈ«²¿°²×°ÍêÁËÔÚ·ÅÈë¶ÓÁĞ½øĞĞÆ¥Åä
+			}
 		}
 	}
+	return valid_result;
 }
 
+
 /**********************************************************************************************
-å®‰è£…è®¾å¤‡ï¼Œæ›´æ–°çŠ¶æ€
+ÇøÓòÆ¥ÅäËã·¨
 **********************************************************************************************/
-void Result::install_device(Data& data, int device_index, int area_index) {
+int Result::Area_Match(Data& data, int dev_index, int wind) {
+	int match_area;
+	long dev_cost = LONG_MAX;
+	/*¿´Ã¿¸ö´°¿ÚÀïÖ§³ÖµÄÇøÓòÊÇ·ñÄÜ°²×°¸ÃÉè±¸£¬ÄÜ°²×°ÇÒ·ÑÓÃĞ¡ÓÚÉÏÒ»¸ö¾Í¸üĞÂ¸ÃÉè±¸µÄ·ÑÓÃ*/
+	for (int j = 0; j < data.window_data[wind].support_area.size(); j++) {
+		int area = data.window_data[wind].support_area[j];
+		int energy_type = data.area_data[area].energy_type;
+		if (data.device_data[dev_index].energy_install_cost[energy_type] > 0 &&
+			data.device_data[dev_index].energy_install_cost[energy_type] < dev_cost)
+		{
+			dev_cost = data.device_data[dev_index].energy_install_cost[energy_type];
+			match_area = area;
+		}
+	}
+	return match_area;
+}
+
+
+/**********************************************************************************************
+°²×°Éè±¸£¬¸üĞÂ×´Ì¬
+**********************************************************************************************/
+void Result::install_device(Data& data, int device_index, int area_index, int wind_index) {
 	int window_index = data.area_data[area_index].window_index;
 	int energy_type = data.area_data[area_index].energy_type;
-	//çª—å£çŠ¶æ€æ›´æ–°
+	//´°¿Ú×´Ì¬¸üĞÂ
 	data.window_data[window_index].already_installed_device.emplace_back(device_index);
 	data.window_data[window_index].process_time = max(data.window_data[window_index].process_time, data.device_process_time[energy_type]);
 	data.window_data[window_index].in_times++;
-	//åŒºåŸŸçŠ¶æ€æ›´æ–°
+	//ÇøÓò×´Ì¬¸üĞÂ
 	data.area_data[area_index].already_installed_device.emplace_back(device_index);
-	//è®¾å¤‡çŠ¶æ€æ›´æ–°
+	//Éè±¸×´Ì¬¸üĞÂ
 	data.device_data[device_index].installed_area = area_index;
 	data.device_data[device_index].install_cost = data.device_data[device_index].energy_install_cost[energy_type];
-	//æ–¹æ¡ˆçŠ¶æ€æ›´æ–°
-	installed_window[0][device_index] = cur_wind_index;
-	//å…¨å±€çŠ¶æ€æ›´æ–°
+	//·½°¸×´Ì¬¸üĞÂ
+	installed_window[0][device_index] = wind_index;
+	installed_area[0][device_index] = area_index;
+	//È«¾Ö×´Ì¬¸üĞÂ
 	data.have_installed_device_num--;
 }
 
+
 /**********************************************************************************************
-ç»“æœè¾“å‡º
+½á¹ûÊä³ö
 **********************************************************************************************/
 void Result::Output(Data& data) {
-	/*ä»ªå™¨çš„æ•°é‡*/
+	/*ÒÇÆ÷µÄÊıÁ¿*/
 	cout << data.device_num << endl;
 
-	/*ä»ªå™¨å®‰è£…çš„è½¦é—´åŒºåŸŸä¸‹æ ‡çš„æ•°ç»„*/
-	for (int i = 0; i < data.device_num - 1; i++) {
+	/*ÒÇÆ÷°²×°µÄ³µ¼äÇøÓòÏÂ±êµÄÊı×é*/
+	for (int i = 0; i < data.device_num; i++) {
 		cout << installed_area[0][i] << " ";
 	}
-	cout << installed_area[0][data.device_num - 1] << endl;
+	cout << endl;
 
-	/*æµæ°´çº¿çš„æ­¥éª¤æ•°*/
+	/*Á÷Ë®ÏßµÄ²½ÖèÊı*/
 	cout << data.coreline.core_devices.size() << endl;
 
-	/*æµæ°´çº¿çš„çª—å£ä¸‹æ ‡çš„æ•°ç»„*/
+	/*Á÷Ë®ÏßµÄ´°¿ÚÏÂ±êµÄÊı×é*/
 	int core, wind;
-	for (int i = 0; i < data.coreline.core_devices.size() - 1; i++) {
+	for (int i = 0; i < data.coreline.core_devices.size(); i++) {
 		core = data.coreline.core_devices[i];
 		cout << data.sqread_circle[installed_window[0][core]] << " ";
 	}
-	core = data.coreline.core_devices[data.coreline.core_devices.size() - 1];
-	cout << data.sqread_circle[installed_window[0][core]] << endl;
+	cout << endl;
 }
 
-/*è¿”å›çš„æ˜¯å›ç¯çª—å£åºåˆ—çš„*/
-queue<int> Result::Choose_Window(Data& data, int dev_indev, int cur_wind_index) {
-	queue<int> results;
-	return results;
-}
 
 /**********************************************************************************************
-åˆ¤æ–­å½“å‰è®¾å¤‡å’Œçª—å£èƒ½ä¸èƒ½åŒ¹é…
-æ³¨æ„ï¼šè¿™é‡Œçš„wind_indexæ˜¯çª—å£å·ï¼Œä¸æ˜¯å±•å¼€åçª—å£åºåˆ—ç¼–å·
+ÅĞ¶Ïµ±Ç°Éè±¸ºÍ´°¿ÚÄÜ²»ÄÜÆ¥Åä
+×¢Òâ£ºÕâÀïµÄwind_indexÊÇ´°¿ÚºÅ£¬²»ÊÇÕ¹¿ªºó´°¿ÚĞòÁĞ±àºÅ
 **********************************************************************************************/
 bool Result::Check_Match(Data& data, int dev_index, int wind, int wind_index, int match_index) {
 	bool result = true;
-	/*æ£€æŸ¥æ˜¯å¦æ ¸å¿ƒè®¾å¤‡ï¼Œä»¥åŠæ ¸å¿ƒè®¾å¤‡çš„æ”¯æŒçª—å£æ˜¯å¦åŒ…å«wind_index*/
-	if (data.device_data[dev_index].is_core_device &&
-		data.device_data[dev_index].surport_window.find(wind) ==
-		data.device_data[dev_index].surport_window.end())  //æŒ‡å‘ç©ºï¼Œæ²¡æ‰¾åˆ°
+	/*¼ì²éÊÇ·ñÓĞÖ§³Ö´°¿Ú£¬Èç¹ûÓĞÊÇ·ñÓĞÆ¥ÅäÇøÓò*/
+	if (data.device_data[dev_index].surport_window.find(wind) ==
+		data.device_data[dev_index].surport_window.end())
 		return false;
-
-	/*æ£€æŸ¥ å½“å‰è®¾å¤‡ ä¸ çª—å£æ”¯æŒèƒ½æº åŒ¹é…æƒ…å†µ*/
-	int flag = 0;
-	for (int i = 0; i < data.device_data[dev_index].surport_energy.size(); i++) {
-		if (data.window_data[wind].support_energy.find(data.device_data[dev_index].surport_energy[i]) ==
-			data.window_data[wind].support_energy.end())  //æŒ‡å‘ç©ºï¼Œæ²¡æ‰¾åˆ°
-			flag++;
+	else {
+		if(data.device_data[dev_index].surport_window[wind].size() == 0)
+			return false;
 	}
-	if (flag == data.device_data[dev_index].surport_energy.size())
-		return false;
 
-	/*æ£€æŸ¥å½“å‰è®¾å¤‡æ‰€æœ‰è¾“å…¥è®¾å¤‡çš„çª—å£ç´¢å¼•æ˜¯å¦å°äºå½“å‰åŒ¹é…çª—å£ç´¢å¼•ï¼ŒååŒè®¾å¤‡å¯ä»¥ç­‰äº*/
+	/*¼ì²éµ±Ç°Éè±¸ËùÓĞÊäÈëÉè±¸µÄ´°¿ÚË÷ÒıÊÇ·ñĞ¡ÓÚµ±Ç°Æ¥Åä´°¿ÚË÷Òı£¬Ğ­Í¬Éè±¸¿ÉÒÔµÈÓÚ*/
 	for (int i = 0; i < data.device_data[dev_index].last_device.size(); i++) {
 		int last_dev = data.device_data[dev_index].last_device[i]->index;
-		if (data.linegraph.adjacent_matrix[last_dev][dev_index] != 2 &&  //ä¸æ˜¯ååŒè®¾å¤‡
-			installed_window[match_index][last_dev] >= wind_index)  //è€Œä¸”è¾“å…¥è®¾å¤‡çš„å®‰è£…çª—å£
+		if (data.linegraph.adjacent_matrix[last_dev][dev_index] != 2 &&  //²»ÊÇĞ­Í¬Éè±¸
+			installed_window[match_index][last_dev] >= wind_index)  //¶øÇÒÊäÈëÉè±¸µÄ°²×°´°¿Ú
 			return false;
 	}
 	return result;
 }
+
+
+///*·µ»ØµÄÊÇ»Ø»·´°¿ÚĞòÁĞµÄ*/
+//queue<int> Result::Choose_Window(Data& data, int dev_indev, int cur_wind_index) {
+//	queue<int> results;
+//	return results;
+//}

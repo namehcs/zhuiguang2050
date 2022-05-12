@@ -9,8 +9,6 @@ int main() {
     data.Read_file(in_path);
     data.Data_Choose();
     data.linegraph.Tree_Graph();
-    result.Window_Algorithm(data);
-    result.Area_Algorithm(data);
-    result.Output(data);
+    result.Algorithm(data, 1);
     return 0;
 }
