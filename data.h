@@ -5,6 +5,7 @@
 #include <fstream>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 
 using namespace std;
 
@@ -18,7 +19,7 @@ public:
     bool self_loop;  //初始化时读入
     int workershop_index;  //初始化时读入
     int cost_coefficient;  //初始化时读入
-    int process_time;
+    set<int> process_time;
     int in_times;
 
     vector<bool> preprocess_device;  //初始化时读入
@@ -35,13 +36,12 @@ class Area {
 public:
     int index;  //初始化时读入
     int workershop_index;  //初始化时读入
-    int window_index;
     int energy_type;  //初始化时读入
 
     vector<int> already_installed_device;
 
-    Area(int index, int workershop_index, int window_index, int energy_type) :
-        index(index), workershop_index(workershop_index), window_index(window_index), energy_type(energy_type) {}
+    Area(int index, int workershop_index, int energy_type) :
+        index(index), workershop_index(workershop_index), energy_type(energy_type) {}
     ~Area() {}
 };
 
@@ -104,5 +104,7 @@ public:
     int have_installed_device_num;  //已经安装的设备数量
     int area_num;    //初始化时读入
     vector<int> device_process_time;//仪器使用5种能源的加工时间  初始化时读入
-    vector<int> sqread_circle; //Data_Choose时读入
+
+    /*每次找到最低代价的匹配路径后就swap到key=0的位置*/
+    unordered_map<int, vector<int>> sqread_circle; //Data_Choose时读入
 };

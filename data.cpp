@@ -60,7 +60,7 @@ void Data::Read_file(string& path)
             for (int i = 0; i < area_num; i++) {
                 getline(infile, ins);
                 SplitString(ins, outs, " ");
-                Area area(i, atoi(outs[0].c_str()), 0, atoi(outs[1].c_str()));
+                Area area(i, atoi(outs[0].c_str()), atoi(outs[1].c_str()));
                 area_data.push_back(area);
                 outs.clear();
             }
@@ -150,12 +150,12 @@ void Data::Read_file(string& path)
 void Data::Data_Choose() {
 
     /*窗口支持能源及区域的筛选*/
-    for (int i = 0; i < window_num; i++) {
-        for (int r = 0; r < area_num; r++) {
-            if (window_data[i].workershop_index == area_data[r].workershop_index) {
+    for (auto& window : window_data) {
+        for (auto& area : area_data) {
+            if (window.workershop_index == area.workershop_index) {
                 //这里有可能会出现往set里重复插入相同的能源类型，不过测试插入相同的并不会冲突，而且只会插入一次
-                window_data[i].support_energy.insert(area_data[r].energy_type);
-                window_data[i].support_area.push_back(area_data[r].index);
+                window.support_energy.insert(area.energy_type);
+                window.support_area.push_back(area.index);
             }
         }
     }
@@ -185,22 +185,24 @@ void Data::Data_Choose() {
     }
 
     /*展开回环窗口，生成最长的窗口序列*/
+    vector<int> longest;
     for (int out_slp = 0; out_slp < max_loop_num + 1; out_slp++){
         for (int loop = 0; loop < first_loop_window_num; loop++) {
             if (window_data[loop].self_loop) {
                 for (int slp = 0; slp < max_loop_num; slp++)
-                    sqread_circle.push_back(loop);
+                    longest.push_back(loop);
             }
-            sqread_circle.push_back(loop);
+            longest.push_back(loop);
         }
     }
     for (int others = first_loop_window_num; others < window_num; others++) {
         if (window_data[others].self_loop) {
             for (int slp = 0; slp < max_loop_num; slp++)
-                sqread_circle.push_back(others);
+                longest.push_back(others);
         }
-        sqread_circle.push_back(others);
+        longest.push_back(others);
     }
+    sqread_circle.insert({ 0, longest });
     return;
 }
 
