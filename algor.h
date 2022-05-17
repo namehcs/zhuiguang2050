@@ -7,19 +7,25 @@
 class Result:public Data {
 public:
     /*每次找到最低代价的匹配后就swap到key=0的位置*/
-    unordered_map<int, vector<int>> installed_window; //结果：设备安装窗口
-    unordered_map<int, vector<int>> installed_area; //结果：设备安装区域
+    vector<vector<int>> installed_window; //结果：设备安装窗口
+    vector<vector<int>> installed_area; //结果：设备安装区域
 
-    void Algorithm(Data& data, int line_num);
+    void Algorithm(Data& data);
 
 private:
+    long longmax = 2147483647;
+    vector<long> match_costs;
     long Get_Cost(Data& data);
     void Output(Data& data, int line);
-    int Unhook(Data& data, int unhook_type);
-    int Area_Match(Data& data, int dev_index, int wind);
-    void install_device(Data& data, int device_index, int area_index, int wind, int wind_index);
-    bool Check_Match(Data& data, int dev_index, int wind, int wind_index, int line);
-    bool Install_Match(Data& data, queue<int>& L1, int start_wind_index, int line);
+    void Unhook(Data& data, int unhook_type, int& best_line);
+    bool Install_Match(Data& data, int line);
+    bool Check_Match(Data& data, int dev_index, int wind, int wind_index, int line, int& area_index);
+    void install_device(Data& data, int device_index, int area_index, int wind, int line, int wind_index);
+
+    bool Install_Match_back(Data& data, int line);
+    bool Check_Match_back(Data& data, int dev_index, int wind, int wind_index, int line, int& area_index);
+    void install_device_back(Data& data, int device_index, int area_index, int wind, int wind_index, int line, int pre_wind_index = -1, int pre_area_index = -1);
+
 };
 
 

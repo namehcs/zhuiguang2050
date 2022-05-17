@@ -31,10 +31,122 @@ void LineGraph::Tree_Graph() {
     }
 }
 
-void Data::Read_file(string& path)
+void Data::Read_file_cin()
 {
-    ifstream infile(path);
-    if (!infile.is_open()) cout << "can't open file " << path << endl;
+    string ins;
+    vector<string> outs;
+    for (int block = 0; block < 7; block++) {
+        outs.clear();
+        /*加工迭代次数和能源加工时长*/
+        if (block == 0) {
+            getline(cin, ins);
+            coreline.production_times = atoi(ins.c_str());
+
+            getline(cin, ins);
+            SplitString(ins, outs, " ");
+            for (string p : outs)
+                device_process_time.push_back(atoi(p.c_str()));
+        }
+        /*区域数据载入*/
+        else if (block == 1) {
+            getline(cin, ins);
+            workershop_num = atoi(ins.c_str());
+
+            getline(cin, ins);
+            area_num = atoi(ins.c_str());
+            for (int i = 0; i < area_num; i++) {
+                getline(cin, ins);
+                SplitString(ins, outs, " ");
+                Area area(i, atoi(outs[0].c_str()), atoi(outs[1].c_str()));
+                area_data.push_back(area);
+                outs.clear();
+            }
+        }
+        /*环回*/
+        else if (block == 2) {
+            getline(cin, ins);
+            max_loop_num = atoi(ins.c_str());
+            getline(cin, ins);
+            first_loop_window_num = atoi(ins.c_str());
+        }
+        /*窗口数据载入*/
+        else if (block == 3) {
+            getline(cin, ins);
+            window_num = atoi(ins.c_str());
+            for (int i = 0; i < window_num; i++) {
+                getline(cin, ins);
+                SplitString(ins, outs, " ");
+                Window wind(i, atoi(outs[0].c_str()), atoi(outs[1].c_str()), atoi(outs[2].c_str()));
+                for (int j = 3; j < 6; j++) {
+                    wind.preprocess_device.push_back(atoi(outs[j].c_str()));
+                }
+                window_data.push_back(wind);
+                outs.clear();
+            }
+        }
+        /*设备数据载入*/
+        else if (block == 4) {
+            getline(cin, ins);
+            device_num = atoi(ins.c_str());
+            linegraph.adjacent_matrix.resize(device_num);
+            for (int i = 0; i < device_num; i++) {
+                linegraph.adjacent_matrix[i].resize(device_num);
+                getline(cin, ins);
+                SplitString(ins, outs, " ");
+                Device device(i, atoi(outs[0].c_str()), false);
+                for (int j = 1; j < 6; j++) {
+                    device.energy_install_cost.push_back(atoi(outs[j].c_str()));
+                    if (atoi(outs[j].c_str()) != 0)
+                        device.surport_energy.insert(j - 1);
+                }
+                device_data.push_back(device);
+                outs.clear();
+            }
+        }
+        /*流水图数据载入及设备节点的输入输出*/
+        else if (block == 5) {
+            getline(cin, ins);
+            linegraph.edge_num = atoi(ins.c_str());
+            for (int i = 0; i < linegraph.edge_num; i++) {
+                getline(cin, ins);
+                SplitString(ins, outs, " ");
+                vector<int> oneline;
+                for (int j = 0; j < 3; j++)
+                    oneline.push_back(atoi(outs[j].c_str()));
+                int from = atoi(outs[1].c_str());
+                int to = atoi(outs[2].c_str());
+                device_data[from].next_device.push_back(&device_data[to]);//插入第一个节点的next_device
+                device_data[to].last_device.push_back(&device_data[from]);//插入第二个节点的last_device
+                linegraph.graph_data.push_back(oneline);
+                outs.clear();
+            }
+        }
+        /*核心流水线和邻接矩阵*/
+        else if (block == 6) {
+            getline(cin, ins);
+            coreline.edge_num = atoi(ins.c_str());
+            getline(cin, ins);
+            SplitString(ins, outs, " ");
+            int core_line = atoi(outs[0].c_str());
+            int core_device = linegraph.graph_data[core_line][1];
+            coreline.core_devices.push_back(core_device);
+            device_data[core_device].is_core_device = true;
+            for (int i = 0; i < coreline.edge_num; i++) {
+                core_line = atoi(outs[i].c_str());
+                coreline.edge_array.push_back(core_line);
+                int core_device = linegraph.graph_data[core_line][2];
+                coreline.core_devices.push_back(core_device);
+                device_data[core_device].is_core_device = true;
+            }
+        }
+    }
+}
+
+
+void Data::Read_file()
+{
+    ifstream infile(in_path);
+    if (!infile.is_open()) cout << "can't open file " << in_path << endl;
     string ins;
     vector<string> outs;
     int block = 0;
@@ -166,12 +278,11 @@ void Data::Data_Choose() {
             //窗口需要支持预加工//如果不是核心设备就不用
             if (window_data[w].preprocess_device[device_data[i].type] || !device_data[i].is_core_device) {
                 //看看有没有区域可以支持
-                for (int a = 0; a < window_data[w].support_area.size(); a++) {
+                for (auto& area : window_data[w].support_area) {
                     //判断能源能否匹配
-                    int area_index = window_data[w].support_area[a];
-                    if (device_data[i].surport_energy.find(area_data[area_index].energy_type) != 
+                    if (device_data[i].surport_energy.find(area_data[area].energy_type) !=
                         device_data[i].surport_energy.end())
-                        device_data[i].surport_window[w].emplace_back(a); 
+                        device_data[i].surport_window[w].emplace_back(area);
                 }
             }
         }
@@ -179,9 +290,10 @@ void Data::Data_Choose() {
 
     /*寻找头结点*/
     for (int i = 0; i < device_num; i++) {
-        if (device_data[i].last_device.size() == 0) {
+        if (device_data[i].last_device.size() == 0)
             linegraph.first_device.push_back(&device_data[i]);
-        }
+        if (device_data[i].next_device.size() == 0)
+            linegraph.latest_device.push_back(&device_data[i]);
     }
 
     /*展开回环窗口，生成最长的窗口序列*/
@@ -202,7 +314,7 @@ void Data::Data_Choose() {
         }
         longest.push_back(others);
     }
-    sqread_circle.insert({ 0, longest });
+    sqread_circle.push_back(longest);
     return;
 }
 

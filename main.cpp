@@ -3,12 +3,13 @@
 
 
 int main() {
-    string in_path = "./case0.in";
+    
     Data data;
     Result result;
-    data.Read_file(in_path);
+    data.Read_file();
+    //data.Read_file_cin();
     data.Data_Choose();
     data.linegraph.Tree_Graph();
-    result.Algorithm(data, 1);
+    result.Algorithm(data);
     return 0;
 }

@@ -81,6 +81,7 @@ public:
     vector<vector<int>> adjacent_matrix;  //初始化时读入
     void Tree_Graph();
     vector<Device*> first_device;
+    vector<Device*> latest_device;
 };
 
 class Data {
@@ -90,12 +91,14 @@ public:
     vector<Device> device_data;  //初始化时读入
 
     void Data_Choose();
-    void Read_file(string& path);
+    void Read_file();
+    void Read_file_cin();
     LineGraph linegraph;
     CoreLine coreline;
 
 
 public:
+    string in_path = "./case0.in";
     int workershop_num;  //初始化时读入
     int max_loop_num;  //初始化时读入
     int first_loop_window_num;  //初始化时读入
@@ -106,5 +109,5 @@ public:
     vector<int> device_process_time;//仪器使用5种能源的加工时间  初始化时读入
 
     /*每次找到最低代价的匹配路径后就swap到key=0的位置*/
-    unordered_map<int, vector<int>> sqread_circle; //Data_Choose时读入
+    vector<vector<int>> sqread_circle; //Data_Choose时读入
 };
