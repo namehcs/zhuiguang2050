@@ -17,7 +17,7 @@ private:
     vector<long> match_costs;
     long Get_Cost(Data& data);
     void Output(Data& data, int line);
-    void Unhook(Data& data, int unhook_type, int& best_line);
+    void Unhook(Data& data, int unhook_type, int& bestline);
     bool Install_Match(Data& data, int line);
     bool Check_Match(Data& data, int dev_index, int wind, int wind_index, int line, int& area_index);
     void install_device(Data& data, int device_index, int area_index, int wind, int line, int wind_index);

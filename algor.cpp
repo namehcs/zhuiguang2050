@@ -44,8 +44,6 @@ void Result::Algorithm(Data& data) {
 	if (flag_res1 && flag_res2 && backtrace_cost < forward_cost) {
 		bestline = line;
 	}
-
-
 	State_Clear(data);
 	if (flag_res1) {
 		/*比较每窗口中安装设备的最大加工时间和最小加工时间差值，该值越大拆环后加工时间减小越多，代价越小*/
@@ -88,7 +86,7 @@ void Result::Algorithm(Data& data) {
 拆环后的优化匹配算法
 找到代价更低的匹配就把
 **********************************************************************************************/
-void Result::Unhook(Data& data, int wind, int& best_line) {
+void Result::Unhook(Data& data, int wind, int& bestline) {
 	int startline = data.sqread_circle.size() - 1, start_wind_index = 0;
 	vector<int> unhook_line = data.sqread_circle[0];
 	/*先根据拆环窗口号生成窗口序列*/
@@ -106,20 +104,26 @@ void Result::Unhook(Data& data, int wind, int& best_line) {
 			installed_window.push_back(vector<int>(data.device_num, 999));
 			installed_area.push_back(vector<int>(data.device_num, 999));
 			bool flag_res = Install_Match(data, startline);
-			
-			if (flag_res) {
-				long one_cost = Get_Cost(data);
-				if (one_cost < match_costs[best_line]) {
-					match_costs.push_back(one_cost);
-					State_Clear(data);
-					best_line = startline;
-				}
-				else {
-					installed_window.pop_back();
-					installed_area.pop_back();
-					data.sqread_circle.pop_back();
-					startline--;
-					State_Clear(data);
+			long one_cost = Get_Cost(data);
+
+			if (flag_res && one_cost < match_costs[bestline]) {
+				match_costs.push_back(one_cost);
+				State_Clear(data);
+				bestline = startline;
+
+				/*回溯从后往前调整核心窗口匹配*/
+				/*插入第一个初始化匹配*/
+				startline++;
+				data.sqread_circle.push_back(data.sqread_circle[startline - 1]);
+				installed_window.push_back(installed_window[startline - 1]);
+				installed_area.push_back(installed_area[startline - 1]);
+				bool flag_res2 = Install_Match_back(data, startline);
+				long backtrace_cost = Get_Cost(data);
+				match_costs.push_back(backtrace_cost);
+
+				/*如果回溯代价小于前向代价，则更新最优匹配*/
+				if (flag_res2 && backtrace_cost < match_costs[bestline]) {
+					bestline = startline;
 				}
 			}
 			else {
@@ -402,7 +406,6 @@ bool Result::Install_Match_back(Data& data, int line) {
 	return valid_result;
 }
 
-
 /**********************************************************************************************
 判断当前设备和窗口能不能匹配（优化版本）
 注意：这里的wind_index是窗口号，不是展开后窗口序列编号
@@ -442,8 +445,6 @@ bool Result::Check_Match_back(Data& data, int dev_index, int wind, int wind_inde
 
 	return result;
 }
-
-
 
 /**********************************************************************************************
 安装设备，更新状态，基于回溯
