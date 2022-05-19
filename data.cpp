@@ -297,24 +297,22 @@ void Data::Data_Choose() {
     }
 
     /*展开回环窗口，生成最长的窗口序列*/
-    vector<int> longest;
     for (int out_slp = 0; out_slp < max_loop_num + 1; out_slp++){
         for (int loop = 0; loop < first_loop_window_num; loop++) {
             if (window_data[loop].self_loop) {
                 for (int slp = 0; slp < max_loop_num; slp++)
-                    longest.push_back(loop);
+                    sqread_circle.push_back(loop);
             }
-            longest.push_back(loop);
+            sqread_circle.push_back(loop);
         }
     }
     for (int others = first_loop_window_num; others < window_num; others++) {
         if (window_data[others].self_loop) {
             for (int slp = 0; slp < max_loop_num; slp++)
-                longest.push_back(others);
+                sqread_circle.push_back(others);
         }
-        longest.push_back(others);
+        sqread_circle.push_back(others);
     }
-    sqread_circle.push_back(longest);
     return;
 }
 

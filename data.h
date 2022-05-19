@@ -21,6 +21,7 @@ public:
     int cost_coefficient;  //初始化时读入
     set<int> process_time;
     int in_times;
+    bool limit_in = false;
 
     vector<bool> preprocess_device;  //初始化时读入
     set<int> support_energy;  //Data_Choose时读入
@@ -107,7 +108,7 @@ public:
     int have_installed_device_num;  //已经安装的设备数量
     int area_num;    //初始化时读入
     vector<int> device_process_time;//仪器使用5种能源的加工时间  初始化时读入
-
+    
     /*每次找到最低代价的匹配路径后就swap到key=0的位置*/
-    vector<vector<int>> sqread_circle; //Data_Choose时读入
+    vector<int> sqread_circle; //Data_Choose时读入
 };

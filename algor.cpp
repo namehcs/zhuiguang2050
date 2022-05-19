@@ -1,141 +1,150 @@
 #include "algor.h"
 
 
-void State_Clear(Data& data) {
-	for (auto& wind : data.window_data){
-		wind.already_installed_device.clear();
-		wind.process_time.clear();
-		wind.in_times = 0;
+void State_Clear(Data& data, bool clear_all) {
+	if (clear_all) {
+		for (auto& wind : data.window_data){
+			wind.already_installed_device.clear();
+			wind.process_time.clear();
+			wind.in_times = 0;
+			wind.limit_in = false;
+		}
+		for (auto& area : data.area_data)
+			area.already_installed_device.clear();
+		for (auto& device : data.device_data) {
+			device.install_cost = 0;
+		}
+		data.have_installed_device_num = 0;
 	}
-	for (auto& area : data.area_data)
-		area.already_installed_device.clear();
-	for (auto& device : data.device_data) {
-		device.install_cost = 0;
+	else {
+		for (auto& wind : data.window_data) {
+			wind.process_time.clear();
+			wind.in_times = 0;
+		}
 	}
-	data.have_installed_device_num = 0;
+
+}
+void Result::Sort_Window(Data& data) {
+	/*比较每窗口中安装设备的最大加工时间和最小加工时间差值，该值越大拆环后加工时间减小越多，代价越小*/
+	for (auto& wind : data.window_data) {
+		if (wind.index < data.first_loop_window_num || wind.self_loop) {
+			vector<int> one;
+			if (wind.process_time.size() > 0) {
+				set<int>::iterator end = wind.process_time.end(); end--;
+				one.push_back(wind.index);
+				one.push_back((*end) - (*wind.process_time.begin()));
+			}
+			else {
+				one.push_back(wind.index);
+				one.push_back(0);
+			}
+			unhook_window.push_back(one);
+		}
+	}
+	sort(unhook_window.begin(), unhook_window.end(), [](vector<int>& x, vector<int>& y) { return x[1] > y[1]; });
+	/*加工时间差值已经按从小到大的顺序存放在map里面了，key为差值，value为窗口号*/
+}
+
+void Result::Backward(Data& data, int& bestline) {
+	long backward_cost;
+	bool backward_valid;
+	/*回溯从后往前调整核心窗口匹配，插入第一个初始化匹配*/
+	installed_window.push_back(installed_window[result_index]);
+	installed_area.push_back(installed_area[result_index]);
+	result_index++;
+	State_Clear(data, false);
+	backward_valid = Install_Match_back(data, result_index);
+	if (backward_valid) {
+		backward_cost = Get_Cost(data);
+		match_costs.push_back(backward_cost);
+	}
+	/*如果回溯代价小于最低代价，则更新最优匹配*/
+	if (backward_valid && backward_cost < match_costs[bestline]) {
+		bestline = result_index;
+	}
+	else if (!backward_valid || backward_cost >= match_costs[bestline]) {
+		result_index--;
+		installed_window.pop_back();
+		installed_area.pop_back();
+		match_costs.pop_back();
+	}
+}
+
+
+bool Result::Forward(Data& data, int& bestline) {
+	bool result = true;
+	/*生成前向匹配，注意这里先要把序列放进data.sqread_circle才能进行后续操作*/
+	/*插入第一个初始化匹配*/
+	long forward_cost, backward_cost;
+	bool forward_valid, backward_valid;
+	installed_window.push_back(vector<int>(data.device_num, 999));
+	installed_area.push_back(vector<int>(data.device_num, 999));
+	result_index++;
+	forward_valid = Install_Match(data, result_index);
+	if (forward_valid) {
+		if (result_index == 0)
+			Sort_Window(data);
+		forward_cost = Get_Cost(data);
+		match_costs.push_back(forward_cost);
+		if (forward_cost < match_costs[bestline])
+			bestline = result_index;
+		Backward(data, bestline);
+		///*回溯从后往前调整核心窗口匹配，插入第一个初始化匹配*/
+		//installed_window.push_back(installed_window[result_index]);
+		//installed_area.push_back(installed_area[result_index]);
+		//result_index++;
+		//State_Clear(data, false);
+		//backward_valid = Install_Match_back(data, result_index);
+		//if (backward_valid) {
+		//	backward_cost = Get_Cost(data);
+		//	match_costs.push_back(backward_cost);
+		//}
+		///*如果回溯代价小于最低代价，则更新最优匹配*/
+		//if (backward_valid && backward_cost < match_costs[bestline]) {
+		//	bestline = result_index;
+		//}
+		//else if (!backward_valid || backward_cost >= match_costs[bestline]) {
+		//	result_index--;
+		//	installed_window.pop_back();
+		//	installed_area.pop_back();
+		//	match_costs.pop_back();
+		//}
+	}
+	if (!forward_valid) {
+		result_index--;
+		result = false;
+		installed_window.pop_back();
+		installed_area.pop_back();
+	}
+	State_Clear(data, true);
+	return result;
 }
 
 /**********************************************************************************************
 迭代及优化算法
 **********************************************************************************************/
 void Result::Algorithm(Data& data) {
-	int bestline = 0, line = 0;
-	vector<vector<int>> unhook_window; //改为可拆环的window，自己排序，不一定要用unordered_map
-
-	/*生成全部展开窗口序列的匹配*/
-	/*插入第一个初始化匹配*/
-	installed_window.push_back(vector<int>(data.device_num, 999));
-	installed_area.push_back(vector<int>(data.device_num, 999));
-	bool flag_res1 = Install_Match(data, line);
-	long forward_cost = Get_Cost(data);
-	match_costs.push_back(forward_cost);
-
-	/*回溯从后往前调整核心窗口匹配*/
-	/*插入第一个初始化匹配*/
-	line++;
-	data.sqread_circle.push_back(data.sqread_circle[line - 1]);
-	installed_window.push_back(installed_window[line - 1]);
-	installed_area.push_back(installed_area[line - 1]);
-	bool flag_res2 = Install_Match_back(data, line);
-	long backtrace_cost = Get_Cost(data);
-	match_costs.push_back(backtrace_cost);
-
-	/*如果回溯代价小于前向代价，则更新最优匹配*/
-	if (flag_res1 && flag_res2 && backtrace_cost < forward_cost) {
-		bestline = line;
-	}
-	State_Clear(data);
-	if (flag_res1) {
-		/*比较每窗口中安装设备的最大加工时间和最小加工时间差值，该值越大拆环后加工时间减小越多，代价越小*/
-		for (auto& wind : data.window_data) {
-			if (wind.self_loop){
-				vector<int> one;
-				if (wind.process_time.size() > 0) {
-					set<int>::iterator end = wind.process_time.end(); end--;
-					one.push_back((*end) - (*wind.process_time.begin()));
-					one.push_back(wind.index);
-				}
-				else {
-					one.push_back(0);
-					one.push_back(wind.index);
-				}
-				unhook_window.push_back(one);
-			}
-		}
-		/*加工时间差值已经按从小到大的顺序存放在map里面了，key为差值，value为窗口号*/
+	int bestline = 0;
+	bool forward_result;
+	forward_result = Forward(data, bestline);
+	State_Clear(data, true);
+	if (forward_result) {
 		/*拆环顺序：
 		1、比较自回环最大次数和第一类环回范围
 		2、如果回环次数小于第一类回环范围：先拆自回环中差值最大的，从大到小(>0,0没必要拆)
 		*/
-		int unhook_self_circle = 1;
-		if (data.max_loop_num <= data.first_loop_window_num) {
+		//if (data.max_loop_num <= data.first_loop_window_num) {
 			/*拆自回环*/
-			for (auto& wind : unhook_window) {
-				Unhook(data, wind[1], bestline);
-				
-			}
+		for (auto& wind : unhook_window) {
+			data.window_data[wind[0]].limit_in = true;
+			forward_result = Forward(data, bestline);
+			//Backward(data, bestline);
 		}
+
+		//}
 	}
 	Output(data, bestline);
-	//cout << match_costs[0] << endl;
 	//计算这个res_index的代价，并选择代价最小的匹配结果
-}
-
-
-/**********************************************************************************************
-拆环后的优化匹配算法
-找到代价更低的匹配就把
-**********************************************************************************************/
-void Result::Unhook(Data& data, int wind, int& bestline) {
-	int startline = data.sqread_circle.size() - 1, start_wind_index = 0;
-	vector<int> unhook_line = data.sqread_circle[0];
-	/*先根据拆环窗口号生成窗口序列*/
-	for (int i = 1; i <= data.max_loop_num; i++) {
-		for (vector<int>::iterator it = unhook_line.begin() + 1; it != unhook_line.end(); it++) {
-			if (wind == (*it) && wind == (*(it-1))) {  //如果有连续两个都等于wind，就删去后面一个
-				unhook_line.erase(it);
-				data.sqread_circle.push_back(unhook_line);
-				startline++;
-				break;
-			}
-		}
-		if (data.sqread_circle.size()-1 == installed_window.size() &&
-			data.sqread_circle.size()-1 == installed_area.size()) {
-			installed_window.push_back(vector<int>(data.device_num, 999));
-			installed_area.push_back(vector<int>(data.device_num, 999));
-			bool flag_res = Install_Match(data, startline);
-			long one_cost = Get_Cost(data);
-
-			if (flag_res && one_cost < match_costs[bestline]) {
-				match_costs.push_back(one_cost);
-				State_Clear(data);
-				bestline = startline;
-
-				/*回溯从后往前调整核心窗口匹配*/
-				/*插入第一个初始化匹配*/
-				startline++;
-				data.sqread_circle.push_back(data.sqread_circle[startline - 1]);
-				installed_window.push_back(installed_window[startline - 1]);
-				installed_area.push_back(installed_area[startline - 1]);
-				bool flag_res2 = Install_Match_back(data, startline);
-				long backtrace_cost = Get_Cost(data);
-				match_costs.push_back(backtrace_cost);
-
-				/*如果回溯代价小于前向代价，则更新最优匹配*/
-				if (flag_res2 && backtrace_cost < match_costs[bestline]) {
-					bestline = startline;
-				}
-			}
-			else {
-				installed_window.pop_back();
-				installed_area.pop_back();
-				data.sqread_circle.pop_back();
-				startline--;
-				State_Clear(data);
-			}
-		}
-
-	}
 }
 
 
@@ -156,12 +165,16 @@ bool Result::Install_Match(Data& data, int line) {
 			while (!L2.empty())
 				L2.pop();
 			cur_wind_index++;
+			if (cur_wind_index >= data.sqread_circle.size()) {
+				valid_result = false;
+				break;
+			}
 		}
 		cur_dev = L1.front();
 
 		/*判断能否放入当前窗口*/
 		int cur_area;
-		cur_wind = data.sqread_circle[line][cur_wind_index];
+		cur_wind = data.sqread_circle[cur_wind_index];
 		bool match_cur_wind = Check_Match(data, cur_dev, cur_wind, cur_wind_index, line, cur_area);
 		if (!match_cur_wind) {
 			L2.push(cur_dev);
@@ -181,7 +194,7 @@ bool Result::Install_Match(Data& data, int line) {
 
 		/*判断是否是无效窗口序列，不能放下所有设备*/
 		/*后面还有节点，但是已经到了最后一个窗口，如果前后不是协同关系的话就是无效匹配*/
-		if (cur_wind_index == data.sqread_circle[line].size() - 1){
+		if (cur_wind_index == data.sqread_circle.size() - 1){
 			for (auto& next : data.device_data[cur_dev].next_device) {
 				if (data.linegraph.adjacent_matrix[cur_dev][next->index != 2]) {
 					valid_result = false;
@@ -280,7 +293,7 @@ void Result::Output(Data& data, int line) {
 	int core, wind;
 	for (int i = 0; i < data.coreline.core_devices.size(); i++) {
 		core = data.coreline.core_devices[i];
-		cout << data.sqread_circle[line][installed_window[line][core]] << " ";
+		cout << data.sqread_circle[installed_window[line][core]] << " ";
 	}
 	cout << endl;
 }
@@ -308,6 +321,11 @@ bool Result::Check_Match(Data& data, int dev_index, int wind, int wind_index, in
 			return false;
 	}
 
+	/*针对已安装核心设备的窗口进行输入限制：不能再放入核心设备*/
+	if (data.window_data[wind].limit_in && data.device_data[dev_index].is_core_device && 
+		data.window_data[wind].in_times > 0)
+		return false;
+
 	long dev_cost = longmax;
 	/*看每个窗口里支持的区域是否能安装该设备，能安装且费用小于上一个就更新该设备的费用*/
 	for (auto& area : data.window_data[wind].support_area) {
@@ -318,15 +336,9 @@ bool Result::Check_Match(Data& data, int dev_index, int wind, int wind_index, in
 			area_index = area;
 		}
 	}
+
 	return result;
 }
-
-
-///*返回的是回环窗口序列的*/
-//queue<int> Result::Choose_Window(Data& data, int dev_indev, int cur_wind_index) {
-//	queue<int> results;
-//	return results;
-//}
 
 
 /**********************************************************************************************
@@ -335,7 +347,7 @@ bool Result::Check_Match(Data& data, int dev_index, int wind, int wind_index, in
 bool Result::Install_Match_back(Data& data, int line) {
 	bool valid_result = true;
 	int cur_dev, cur_wind = 0;
-	int cur_wind_index = data.sqread_circle[line].size() - 1;
+	int cur_wind_index = data.sqread_circle.size() - 1;
 	vector<int> done_lastnum(data.device_num, 0);     //过程变量：特殊节点已匹配的输入个数
 	queue<int> L1, L2;
 
@@ -350,19 +362,21 @@ bool Result::Install_Match_back(Data& data, int line) {
 				L2.pop();
 			cur_wind_index--;
 		}
-		if (cur_wind_index < 0)break;
+		if (cur_wind_index < 0) { 
+			break; 
+		}
 		cur_dev = L1.front();
 
 		/*判断能否放入当前窗口*/
 		int cur_area;
-		cur_wind = data.sqread_circle[line][cur_wind_index];
+		cur_wind = data.sqread_circle[cur_wind_index];
 		bool match_cur_wind = Check_Match_back(data, cur_dev, cur_wind, cur_wind_index, line, cur_area);
 		if (!match_cur_wind) {
 			L2.push(cur_dev);
 			L1.pop();
 			continue;
 		}
-		int pre_wind = data.sqread_circle[line][installed_window[line][cur_dev]];
+		int pre_wind = data.sqread_circle[installed_window[line][cur_dev]];
 		int pre_area = installed_area[line][cur_dev];
 		install_device_back(data, cur_dev, cur_area, cur_wind, cur_wind_index, line, pre_wind, pre_area);
 		L1.pop();
@@ -428,20 +442,26 @@ bool Result::Check_Match_back(Data& data, int dev_index, int wind, int wind_inde
 			return false;
 	}
 
+	/*针对已安装核心设备的窗口进行输入限制：不能再放入核心设备*/
+	if (data.window_data[wind].limit_in && data.device_data[dev_index].is_core_device && 
+		data.window_data[wind].in_times > 0)
+		return false;
+
 	/*遍历这个窗口中安装成本最小的区域是哪个*/
-	int min_cost = longmax;
+	int min_cost = longmax, area_;
 	for (auto& area : data.device_data[dev_index].surport_window[wind])
 	{
 		int new_cost = data.device_data[dev_index].energy_install_cost[data.area_data[area].energy_type];
 		if (new_cost < min_cost) {
 			min_cost = new_cost;
-			area_index = area;
+			area_ = area;
 		}
 	}
 
 	/*如果移到这个窗口成本变高了，就不放在这个窗口*/
 	if (min_cost > data.device_data[dev_index].install_cost)
 		return false;
+	area_index = area_;
 
 	return result;
 }
