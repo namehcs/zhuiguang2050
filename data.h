@@ -21,8 +21,9 @@ public:
     int cost_coefficient;  //初始化时读入
     set<int> process_time;
     int in_times;
+    int forward_intimes;
     bool limit_in = false;
-
+    vector<long> optim_cost;
     vector<bool> preprocess_device;  //初始化时读入
     set<int> support_energy;  //Data_Choose时读入
     vector<int> support_area;  //Data_Choose时读入
@@ -52,13 +53,15 @@ public:
     int type;  //初始化时读入
     int installed_area;
     int install_cost;
+    long optim_cost;
     bool is_core_device;  //初始化时读入
     vector<long> energy_install_cost; //初始化时读入
     vector<Device*> next_device; //graph初始化时读入
     vector<Device*> last_device; //graph初始化时读入
-
+    Device* next_coredev = nullptr;
+    Device* last_coredev = nullptr;
+    int done_lastnum;
     set<int> surport_energy; //初始化时读入
-    //set<int> surport_window; //Data_Choose时读入
     unordered_map<int, vector<int>> surport_window;//窗口+区域
 
     Device(int index, int type, bool is_core_device) :
@@ -68,10 +71,11 @@ public:
 
 class CoreLine {
 public:
-    int edge_num;//流水线的边数, 初始化时读入
+    int edge_num;//核心流水线的边数, 初始化时读入
     int production_times; //初始化时读入
     vector<int> edge_array;//流水线的边下标数组,初始化时读入
     vector<int> core_devices; //初始化时读入
+
     vector<int> not_installed_device;
 };
 

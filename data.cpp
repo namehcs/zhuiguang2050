@@ -287,6 +287,13 @@ void Data::Data_Choose() {
             }
         }
     }
+    /*核心节点链接关系建立*/
+    for (int i = 0; i < coreline.core_devices.size(); i++) {
+        if (i > 0)
+            device_data[coreline.core_devices[i]].last_coredev = &device_data[coreline.core_devices[i - 1]];
+        if (i < coreline.edge_num)
+            device_data[coreline.core_devices[i]].next_coredev = &device_data[coreline.core_devices[i + 1]];
+    }
 
     /*寻找头结点*/
     for (int i = 0; i < device_num; i++) {

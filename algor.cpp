@@ -1,11 +1,13 @@
 #include "algor.h"
+//#include <windows.h>
 
 
-void State_Clear(Data& data, bool clear_all) {
+void Result::State_Clear(Data& data, bool clear_all) {
 	if (clear_all) {
-		for (auto& wind : data.window_data){
+		for (auto& wind : data.window_data) {
 			wind.already_installed_device.clear();
 			wind.process_time.clear();
+			wind.forward_intimes = 0;
 			wind.in_times = 0;
 			wind.limit_in = false;
 		}
@@ -19,30 +21,27 @@ void State_Clear(Data& data, bool clear_all) {
 	else {
 		for (auto& wind : data.window_data) {
 			wind.process_time.clear();
+			wind.forward_intimes = wind.in_times;
 			wind.in_times = 0;
 		}
 	}
-
 }
-void Result::Sort_Window(Data& data) {
-	/*比较每窗口中安装设备的最大加工时间和最小加工时间差值，该值越大拆环后加工时间减小越多，代价越小*/
-	for (auto& wind : data.window_data) {
-		if (wind.index < data.first_loop_window_num || wind.self_loop) {
-			vector<int> one;
-			if (wind.process_time.size() > 0) {
-				set<int>::iterator end = wind.process_time.end(); end--;
-				one.push_back(wind.index);
-				one.push_back((*end) - (*wind.process_time.begin()));
-			}
-			else {
-				one.push_back(wind.index);
-				one.push_back(0);
-			}
-			unhook_window.push_back(one);
+
+
+void Result::Sort_Device(Data& data, int line) {
+	/*比较每个核心设备优化代价的大小，从大到小排序*/
+	vector<int> one;
+	for (auto& dev : data.coreline.core_devices) {
+		if (data.device_data[dev].optim_cost > 0) {
+			one.push_back(data.device_data[dev].index);
+			one.push_back(data.device_data[dev].optim_cost);
+			one.push_back(installed_window[line][dev]);
+			optimize_device.push_back(one);
+			one.clear();
 		}
 	}
-	sort(unhook_window.begin(), unhook_window.end(), [](vector<int>& x, vector<int>& y) { return x[1] > y[1]; });
-	/*加工时间差值已经按从小到大的顺序存放在map里面了，key为差值，value为窗口号*/
+
+	sort(optimize_device.begin(), optimize_device.end(), [](vector<int>& x, vector<int>& y) { return x[1] > y[1]; });
 }
 
 void Result::Backward(Data& data, int& bestline) {
@@ -71,7 +70,7 @@ void Result::Backward(Data& data, int& bestline) {
 }
 
 
-bool Result::Forward(Data& data, int& bestline) {
+bool Result::Forward(Data& data, int& bestline, bool core_mode) {
 	bool result = true;
 	/*生成前向匹配，注意这里先要把序列放进data.sqread_circle才能进行后续操作*/
 	/*插入第一个初始化匹配*/
@@ -80,35 +79,14 @@ bool Result::Forward(Data& data, int& bestline) {
 	installed_window.push_back(vector<int>(data.device_num, 999));
 	installed_area.push_back(vector<int>(data.device_num, 999));
 	result_index++;
-	forward_valid = Install_Match(data, result_index);
+	forward_valid = Install_Match(data, result_index, core_start_device, core_start_window_index, core_mode);
 	if (forward_valid) {
-		if (result_index == 0)
-			Sort_Window(data);
+		Sort_Device(data, result_index);
 		forward_cost = Get_Cost(data);
 		match_costs.push_back(forward_cost);
 		if (forward_cost < match_costs[bestline])
 			bestline = result_index;
-		Backward(data, bestline);
-		///*回溯从后往前调整核心窗口匹配，插入第一个初始化匹配*/
-		//installed_window.push_back(installed_window[result_index]);
-		//installed_area.push_back(installed_area[result_index]);
-		//result_index++;
-		//State_Clear(data, false);
-		//backward_valid = Install_Match_back(data, result_index);
-		//if (backward_valid) {
-		//	backward_cost = Get_Cost(data);
-		//	match_costs.push_back(backward_cost);
-		//}
-		///*如果回溯代价小于最低代价，则更新最优匹配*/
-		//if (backward_valid && backward_cost < match_costs[bestline]) {
-		//	bestline = result_index;
-		//}
-		//else if (!backward_valid || backward_cost >= match_costs[bestline]) {
-		//	result_index--;
-		//	installed_window.pop_back();
-		//	installed_area.pop_back();
-		//	match_costs.pop_back();
-		//}
+		//Backward(data, bestline);
 	}
 	if (!forward_valid) {
 		result_index--;
@@ -125,100 +103,137 @@ bool Result::Forward(Data& data, int& bestline) {
 **********************************************************************************************/
 void Result::Algorithm(Data& data) {
 	int bestline = 0;
-	bool forward_result;
-	forward_result = Forward(data, bestline);
-	State_Clear(data, true);
-	if (forward_result) {
-		/*拆环顺序：
-		1、比较自回环最大次数和第一类环回范围
-		2、如果回环次数小于第一类回环范围：先拆自回环中差值最大的，从大到小(>0,0没必要拆)
-		*/
-		//if (data.max_loop_num <= data.first_loop_window_num) {
-			/*拆自回环*/
-		for (auto& wind : unhook_window) {
-			data.window_data[wind[0]].limit_in = true;
-			forward_result = Forward(data, bestline);
-			//Backward(data, bestline);
+	long start_time, end_time, process_time;
+	bool forward_result, core_mode = false;
+	start_time = clock();
+	core_start_window_index = 0;
+	for (auto& dev : data.linegraph.first_device) {
+		if (dev->is_core_device) {
+			core_mode = true;
+			core_start_device = dev->index;
 		}
-
-		//}
+	}
+	forward_result = Forward(data, bestline, core_mode);
+	if (forward_result && optimize_device.size() > 0) {
+		while(optimize_device.size() > 0) {
+			vector<int> dev = optimize_device[0];
+			core_start_device = dev[0];
+			core_start_window_index = dev[2]+1;
+			optimize_device.clear();
+			forward_result = Forward(data, bestline, core_mode);
+			end_time = clock();
+			process_time = (end_time - start_time) / 1000;
+			//if (process_time >= 10)
+			//	break;
+		}
 	}
 	Output(data, bestline);
-	//计算这个res_index的代价，并选择代价最小的匹配结果
 }
 
 
 /**********************************************************************************************
 安装匹配算法
 **********************************************************************************************/
-bool Result::Install_Match(Data& data, int line) {
+bool Result::Install_Match(Data& data, int line, int cur_dev, int cur_wind_index, bool core_mode) {
 	bool valid_result = true;
-	int cur_dev, cur_wind, cur_wind_index = 0;
-	vector<int> done_lastnum(data.device_num, 0);     //过程变量：特殊节点已匹配的输入个数
-	queue<int> L1, L2;
-	/*插入头节点*/
-	for (auto& f : data.linegraph.first_device)
-		L1.push(f->index);
-	while (1) {
-		if (L1.empty()) {
-			L1 = L2;
-			while (!L2.empty())
-				L2.pop();
-			cur_wind_index++;
-			if (cur_wind_index >= data.sqread_circle.size()) {
-				valid_result = false;
-				break;
-			}
-		}
-		cur_dev = L1.front();
-
-		/*判断能否放入当前窗口*/
-		int cur_area;
-		cur_wind = data.sqread_circle[cur_wind_index];
-		bool match_cur_wind = Check_Match(data, cur_dev, cur_wind, cur_wind_index, line, cur_area);
-		if (!match_cur_wind) {
-			L2.push(cur_dev);
-			L1.pop();
-			continue;
-		}
-		install_device(data, cur_dev, cur_area, cur_wind, line, cur_wind_index);  //这里只取了第一个，生成一种匹配方案
-		L1.pop();
-
-		/*判断是否是结束节点*/
-		if (data.device_data[cur_dev].next_device.size() == 0) {
-			if (L1.empty() && L2.empty())
-				break;
-			else
-				continue;
-		}
-
-		/*判断是否是无效窗口序列，不能放下所有设备*/
-		/*后面还有节点，但是已经到了最后一个窗口，如果前后不是协同关系的话就是无效匹配*/
-		if (cur_wind_index == data.sqread_circle.size() - 1){
-			for (auto& next : data.device_data[cur_dev].next_device) {
-				if (data.linegraph.adjacent_matrix[cur_dev][next->index != 2]) {
+	int cur_wind, cur_area;
+	if (!core_mode) {
+		/*插入头节点*/
+		for (auto& f : data.linegraph.first_device)
+			L1.push(f->index);
+		while (1) {
+			if (L1.empty()) {
+				L1 = L2;
+				while (!L2.empty())
+					L2.pop();
+				cur_wind_index++;
+				if (cur_wind_index >= data.sqread_circle.size()) {
 					valid_result = false;
 					break;
 				}
 			}
-		}
-		if (!valid_result)//无效匹配，跳出循环
-			break;
+			cur_dev = L1.front();
 
-		/*判断子节点们是否是特殊节点*/
-		for (auto& son_dev : data.device_data[cur_dev].next_device) {
-			/*不是特殊设备，则将子节点加入L1队列*/
-			if (son_dev->last_device.size() == 1)  //应该不会出现等于0的情况
-				L1.push(son_dev->index);
-			else {
-				/*是特殊设备，则判断子节点所有的输入设备是否都已安装*/
-				if (done_lastnum[son_dev->index] == son_dev->last_device.size() - 1)
-					L1.push(son_dev->index);
+			/*判断能否放入当前窗口*/
+			cur_wind = data.sqread_circle[cur_wind_index];
+			bool match_cur_wind = Check_Match(data, cur_dev, cur_wind, cur_wind_index, line, cur_area, core_mode);
+			if (!match_cur_wind) {
+				L2.push(cur_dev);
+				L1.pop();
+				continue;
+			}
+			install_device(data, cur_dev, cur_area, cur_wind, line, cur_wind_index, core_mode);  //这里只取了第一个，生成一种匹配方案
+			L1.pop();
+
+			/*判断是否是结束节点*/
+			if (data.device_data[cur_dev].next_device.size() == 0) {
+				if (L1.empty() && L2.empty())
+					break;
 				else
-					done_lastnum[son_dev->index]++;  //没安装完就先等着，等全部安装完了在放入队列进行匹配
+					continue;
+			}
+
+			/*判断是否是无效窗口序列，不能放下所有设备*/
+			/*后面还有节点，但是已经到了最后一个窗口，如果前后不是协同关系的话就是无效匹配*/
+			if (cur_wind_index == data.sqread_circle.size() - 1) {
+				for (auto& next : data.device_data[cur_dev].next_device) {
+					if (data.linegraph.adjacent_matrix[cur_dev][next->index != 2]) {
+						valid_result = false;
+						break;
+					}
+				}
+			}
+			if (!valid_result)//无效匹配，跳出循环
+				break;
+
+			/*判断子节点们是否是特殊节点*/
+			for (auto& son_dev : data.device_data[cur_dev].next_device) {
+				/*不是特殊设备，则将子节点加入L1队列*/
+				if (son_dev->last_device.size() == 1)  //应该不会出现等于0的情况
+					L1.push(son_dev->index);
+				else {
+					/*是特殊设备，则判断子节点所有的输入设备是否都已安装*/
+					if (son_dev->done_lastnum == son_dev->last_device.size() - 1)
+						L1.push(son_dev->index);
+					else
+						son_dev->done_lastnum++;  //没安装完就先等着，等全部安装完了在放入队列进行匹配
+				}
 			}
 		}
 	}
+	if (core_mode) {
+		while (1) {
+			/*判断能否放入当前窗口*/
+			cur_wind = data.sqread_circle[cur_wind_index];
+			bool match_cur_wind = Check_Match(data, cur_dev, cur_wind, cur_wind_index, line, cur_area, core_mode);
+			if (!match_cur_wind) {
+				cur_wind_index++;
+				if (cur_wind_index >= data.sqread_circle.size()) {
+					valid_result = false;
+					break;
+				}
+				continue;
+			}
+			install_device(data, cur_dev, cur_area, cur_wind, line, cur_wind_index, core_mode);
+
+			/*判断是否是结束节点*/
+			if (cur_dev == data.coreline.core_devices[data.coreline.edge_num])
+				break;
+
+			/*判断是否是无效窗口序列，不能放下所有设备*/
+			/*后面还有节点，但是已经到了最后一个窗口，如果前后不是协同关系的话就是无效匹配*/
+			if (cur_wind_index == data.sqread_circle.size() - 1) {
+				if (data.linegraph.adjacent_matrix[cur_dev][data.device_data[cur_dev].next_coredev->index != 2]) {
+					valid_result = false;
+					break;
+				}
+			}
+			if (!valid_result)//无效匹配，跳出循环
+				break;
+			cur_dev = data.device_data[cur_dev].next_coredev->index;
+		}
+	}
+
 	return valid_result;
 }
 
@@ -226,21 +241,51 @@ bool Result::Install_Match(Data& data, int line) {
 /**********************************************************************************************
 安装设备，更新状态
 **********************************************************************************************/
-void Result::install_device(Data& data, int device_index, int area_index, int wind, int line, int wind_index) {
-
+void Result::install_device(Data& data, int device_index, int area_index, int wind, int line, int wind_index, bool core_mode) {
 	int energy_type = data.area_data[area_index].energy_type;
+
+	if (core_mode) {
+		//安装优化代价计算
+		long cur_cost = data.device_data[device_index].energy_install_cost[data.area_data[area_index].energy_type];
+		for (auto& cost : data.device_data[device_index].energy_install_cost) {
+			if (cost < cur_cost && cost != 0)
+				data.device_data[device_index].optim_cost = cost - cur_cost;
+		}
+
+		//预加工和运行优化代价计算-只有核心设备需要计算
+		if (data.device_data[device_index].is_core_device && data.window_data[wind].in_times > 0) {
+			int last_process_time = 0, cur_process_time = 0, last_intimes = data.window_data[wind].in_times;
+			for (auto& last_dev : data.window_data[wind].already_installed_device) {
+				last_process_time = max(last_process_time, data.device_process_time[data.area_data
+					[data.device_data[last_dev].installed_area].energy_type]);
+			}
+			cur_process_time = data.device_process_time[energy_type];
+
+			//运行可优化代价
+			if (last_process_time > cur_process_time) {
+				data.device_data[device_index].optim_cost += data.coreline.production_times *
+					(last_process_time - cur_process_time);
+			}
+			if (last_process_time < cur_process_time) {
+				data.device_data[device_index].optim_cost += data.coreline.production_times *
+					last_intimes * (cur_process_time - last_process_time);
+			}
+		}
+	}
+
 	//窗口状态更新
 	data.window_data[wind].already_installed_device.push_back(device_index);
 	//这个设备是核心设备才计算加工时间，process_time改成set，是核心设备就往里push
 	if (data.device_data[device_index].is_core_device) {
 		data.window_data[wind].process_time.insert(data.device_process_time[energy_type]);
-		if(data.device_data[device_index].last_device.size() == 0) //核心头结点的次数要加进去
+		if (data.device_data[device_index].last_device.size() == 0) //核心头结点的次数要加进去
 			data.window_data[wind].in_times++;
 		for (auto& dev_last : data.device_data[device_index].last_device) {
 			if (dev_last->is_core_device && data.linegraph.adjacent_matrix[dev_last->index][device_index] != 2)
 				data.window_data[wind].in_times++;//这个设备和上个设备是核心设备，且两个设备不是协同设备
 		}
 	}
+
 	//区域状态更新
 	data.area_data[area_index].already_installed_device.push_back(device_index);
 	//设备状态更新
@@ -263,9 +308,9 @@ long Result::Get_Cost(Data& data) {
 	}
 	for (auto& window : data.window_data) {  //按最后面的最大值计算加工时间
 		if (window.process_time.size() > 0) {
-			set<int>::iterator end = window.process_time.end(); 
+			set<int>::iterator end = window.process_time.end();
 			end--;
-			preprocess_cost += window.cost_coefficient * (*end); 
+			preprocess_cost += window.cost_coefficient * (*end);
 			window_match_cost += (*end) * window.in_times * data.coreline.production_times;
 		}
 	}
@@ -303,26 +348,35 @@ void Result::Output(Data& data, int line) {
 判断当前设备和窗口能不能匹配
 注意：这里的wind_index是窗口号，不是展开后窗口序列编号
 **********************************************************************************************/
-bool Result::Check_Match(Data& data, int dev_index, int wind, int wind_index, int line, int& area_index) {
+bool Result::Check_Match(Data& data, int dev_index, int wind, int wind_index, int line, int& area_index, bool core_mode) {
 	bool result = true;
 	/*检查是否有支持窗口，如果有是否有匹配区域*/
 	if (data.device_data[dev_index].surport_window.find(wind) ==
 		data.device_data[dev_index].surport_window.end())
 		return false;
 	else {
-		if(data.device_data[dev_index].surport_window[wind].size() == 0)
+		if (data.device_data[dev_index].surport_window[wind].size() == 0)
 			return false;
 	}
 
-	/*检查当前设备所有输入设备的窗口索引是否小于当前匹配窗口索引，协同设备可以等于*/
-	for (auto& last_dev : data.device_data[dev_index].last_device) {
-		if (data.linegraph.adjacent_matrix[last_dev->index][dev_index] != 2 &&  //不是协同设备
-			installed_window[line][last_dev->index] >= wind_index)  //而且输入设备的安装窗口
+	if (!core_mode) {
+		/*检查当前设备所有输入设备的窗口索引是否小于当前匹配窗口索引，协同设备可以等于*/
+		for (auto& last_dev : data.device_data[dev_index].last_device) {
+			if (data.linegraph.adjacent_matrix[last_dev->index][dev_index] != 2 &&  //不是协同设备
+				installed_window[line][last_dev->index] >= wind_index)  //而且输入设备的安装窗口
+				return false;
+		}
+	}
+	else{
+		/*检查输入核心设备的窗口索引是否小于当前匹配窗口索引，协同设备可以等于*/
+		if (data.device_data[dev_index].last_coredev &&
+			data.linegraph.adjacent_matrix[data.device_data[dev_index].last_coredev->index][dev_index] != 2 &&  //不是协同设备
+			installed_window[line][data.device_data[dev_index].last_coredev->index] >= wind_index)  //而且输入设备的安装窗口
 			return false;
 	}
 
 	/*针对已安装核心设备的窗口进行输入限制：不能再放入核心设备*/
-	if (data.window_data[wind].limit_in && data.device_data[dev_index].is_core_device && 
+	if (data.window_data[wind].limit_in && data.device_data[dev_index].is_core_device &&
 		data.window_data[wind].in_times > 0)
 		return false;
 
@@ -348,7 +402,6 @@ bool Result::Install_Match_back(Data& data, int line) {
 	bool valid_result = true;
 	int cur_dev, cur_wind = 0;
 	int cur_wind_index = data.sqread_circle.size() - 1;
-	vector<int> done_lastnum(data.device_num, 0);     //过程变量：特殊节点已匹配的输入个数
 	queue<int> L1, L2;
 
 	/*插入尾部节点*/
@@ -362,8 +415,8 @@ bool Result::Install_Match_back(Data& data, int line) {
 				L2.pop();
 			cur_wind_index--;
 		}
-		if (cur_wind_index < 0) { 
-			break; 
+		if (cur_wind_index < 0) {
+			break;
 		}
 		cur_dev = L1.front();
 
@@ -403,17 +456,16 @@ bool Result::Install_Match_back(Data& data, int line) {
 			break;
 
 		/*判断子节点们是否是特殊节点*/
-		for (int i = 0; i < data.device_data[cur_dev].last_device.size(); i++) {
-			int son_dev = data.device_data[cur_dev].last_device[i]->index;
+		for (auto& son_dev : data.device_data[cur_dev].last_device) {
 			/*不是特殊设备，则将子节点加入L1队列*/
-			if (data.device_data[son_dev].next_device.size() == 1)  //应该不会出现等于0的情况
-				L1.push(son_dev);
+			if (son_dev->next_device.size() == 1)  //应该不会出现等于0的情况
+				L1.push(son_dev->index);
 			else {
 				/*是特殊设备，则判断子节点所有的输入设备是否都已安装*/
-				if (done_lastnum[son_dev] == data.device_data[son_dev].next_device.size() - 1)
-					L1.push(son_dev);
+				if (son_dev->done_lastnum == son_dev->next_device.size() - 1)
+					L1.push(son_dev->index);
 				else
-					done_lastnum[son_dev]++;  //没安装完就先等着，等全部安装完了在放入队列进行匹配
+					son_dev->done_lastnum++;  //没安装完就先等着，等全部安装完了在放入队列进行匹配
 			}
 		}
 	}
@@ -443,7 +495,7 @@ bool Result::Check_Match_back(Data& data, int dev_index, int wind, int wind_inde
 	}
 
 	/*针对已安装核心设备的窗口进行输入限制：不能再放入核心设备*/
-	if (data.window_data[wind].limit_in && data.device_data[dev_index].is_core_device && 
+	if (data.window_data[wind].limit_in && data.device_data[dev_index].is_core_device &&
 		data.window_data[wind].in_times > 0)
 		return false;
 
@@ -469,7 +521,7 @@ bool Result::Check_Match_back(Data& data, int dev_index, int wind, int wind_inde
 /**********************************************************************************************
 安装设备，更新状态，基于回溯
 **********************************************************************************************/
-void Result::install_device_back(Data& data, int device_index, int area_index, int wind, 
+void Result::install_device_back(Data& data, int device_index, int area_index, int wind,
 	int wind_index, int line, int pre_wind_index, int pre_area_index) {
 
 	//int window_index = data.area_data[area_index].window_index;
@@ -480,7 +532,7 @@ void Result::install_device_back(Data& data, int device_index, int area_index, i
 	if (pre_wind_index >= 0)
 	{
 		/*窗口状态恢复*/
-		auto it = find(data.window_data[pre_wind_index].already_installed_device.begin(), 
+		auto it = find(data.window_data[pre_wind_index].already_installed_device.begin(),
 			data.window_data[pre_wind_index].already_installed_device.end(), device_index);
 		data.window_data[pre_wind_index].already_installed_device.erase(it);
 
@@ -493,7 +545,7 @@ void Result::install_device_back(Data& data, int device_index, int area_index, i
 			}
 		}
 		//区域状态恢复
-		auto it_area = find(data.area_data[pre_area_index].already_installed_device.begin(), 
+		auto it_area = find(data.area_data[pre_area_index].already_installed_device.begin(),
 			data.area_data[pre_area_index].already_installed_device.end(), device_index);
 		data.area_data[pre_area_index].already_installed_device.erase(it_area);
 		//全局状态恢复
