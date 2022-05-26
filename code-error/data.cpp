@@ -37,7 +37,7 @@ void Data::Read_file_cin()
     vector<string> outs;
     for (int block = 0; block < 7; block++) {
         outs.clear();
-        /*åŠ å·¥è¿­ä»£æ¬¡æ•°å’Œèƒ½æºåŠ å·¥æ—¶é•¿*/
+        /*¼Ó¹¤µü´ú´ÎÊýºÍÄÜÔ´¼Ó¹¤Ê±³¤*/
         if (block == 0) {
             getline(cin, ins);
             coreline.production_times = atoi(ins.c_str());
@@ -47,7 +47,7 @@ void Data::Read_file_cin()
             for (string p : outs)
                 device_process_time.push_back(atoi(p.c_str()));
         }
-        /*åŒºåŸŸæ•°æ®è½½å…¥*/
+        /*ÇøÓòÊý¾ÝÔØÈë*/
         else if (block == 1) {
             getline(cin, ins);
             workershop_num = atoi(ins.c_str());
@@ -62,14 +62,14 @@ void Data::Read_file_cin()
                 outs.clear();
             }
         }
-        /*çŽ¯å›ž*/
+        /*»·»Ø*/
         else if (block == 2) {
             getline(cin, ins);
             max_loop_num = atoi(ins.c_str());
             getline(cin, ins);
             first_loop_window_num = atoi(ins.c_str());
         }
-        /*çª—å£æ•°æ®è½½å…¥*/
+        /*´°¿ÚÊý¾ÝÔØÈë*/
         else if (block == 3) {
             getline(cin, ins);
             window_num = atoi(ins.c_str());
@@ -84,7 +84,7 @@ void Data::Read_file_cin()
                 outs.clear();
             }
         }
-        /*è®¾å¤‡æ•°æ®è½½å…¥*/
+        /*Éè±¸Êý¾ÝÔØÈë*/
         else if (block == 4) {
             getline(cin, ins);
             device_num = atoi(ins.c_str());
@@ -103,7 +103,7 @@ void Data::Read_file_cin()
                 outs.clear();
             }
         }
-        /*æµæ°´å›¾æ•°æ®è½½å…¥åŠè®¾å¤‡èŠ‚ç‚¹çš„è¾“å…¥è¾“å‡º*/
+        /*Á÷Ë®Í¼Êý¾ÝÔØÈë¼°Éè±¸½ÚµãµÄÊäÈëÊä³ö*/
         else if (block == 5) {
             getline(cin, ins);
             linegraph.edge_num = atoi(ins.c_str());
@@ -115,13 +115,13 @@ void Data::Read_file_cin()
                     oneline.push_back(atoi(outs[j].c_str()));
                 int from = atoi(outs[1].c_str());
                 int to = atoi(outs[2].c_str());
-                device_data[from].next_device.push_back(&device_data[to]);//æ’å…¥ç¬¬ä¸€ä¸ªèŠ‚ç‚¹çš„next_device
-                device_data[to].last_device.push_back(&device_data[from]);//æ’å…¥ç¬¬äºŒä¸ªèŠ‚ç‚¹çš„last_device
+                device_data[from].next_device.push_back(&device_data[to]);//²åÈëµÚÒ»¸ö½ÚµãµÄnext_device
+                device_data[to].last_device.push_back(&device_data[from]);//²åÈëµÚ¶þ¸ö½ÚµãµÄlast_device
                 linegraph.graph_data.push_back(oneline);
                 outs.clear();
             }
         }
-        /*æ ¸å¿ƒæµæ°´çº¿å’Œé‚»æŽ¥çŸ©é˜µ*/
+        /*ºËÐÄÁ÷Ë®ÏßºÍÁÚ½Ó¾ØÕó*/
         else if (block == 6) {
             getline(cin, ins);
             coreline.edge_num = atoi(ins.c_str());
@@ -152,7 +152,7 @@ void Data::Read_file()
     int block = 0;
     for (int block = 0; block < 7; block++) {
         outs.clear();
-        /*åŠ å·¥è¿­ä»£æ¬¡æ•°å’Œèƒ½æºåŠ å·¥æ—¶é•¿*/
+        /*¼Ó¹¤µü´ú´ÎÊýºÍÄÜÔ´¼Ó¹¤Ê±³¤*/
         if (block == 0) {
             getline(infile, ins);
             coreline.production_times = atoi(ins.c_str());
@@ -162,7 +162,7 @@ void Data::Read_file()
             for (string p : outs)
                 device_process_time.push_back(atoi(p.c_str()));
         }
-        /*åŒºåŸŸæ•°æ®è½½å…¥*/
+        /*ÇøÓòÊý¾ÝÔØÈë*/
         else if (block == 1) {
             getline(infile, ins);
             workershop_num = atoi(ins.c_str());
@@ -177,14 +177,14 @@ void Data::Read_file()
                 outs.clear();
             }
         }
-        /*çŽ¯å›ž*/
+        /*»·»Ø*/
         else if (block == 2) {
             getline(infile, ins);
             max_loop_num = atoi(ins.c_str());
             getline(infile, ins);
             first_loop_window_num = atoi(ins.c_str());
         }
-        /*çª—å£æ•°æ®è½½å…¥*/
+        /*´°¿ÚÊý¾ÝÔØÈë*/
         else if (block == 3) {
             getline(infile, ins);
             window_num = atoi(ins.c_str());
@@ -199,7 +199,7 @@ void Data::Read_file()
                 outs.clear();
             }
         }
-        /*è®¾å¤‡æ•°æ®è½½å…¥*/
+        /*Éè±¸Êý¾ÝÔØÈë*/
         else if (block == 4) {
             getline(infile, ins);
             device_num = atoi(ins.c_str());
@@ -218,7 +218,7 @@ void Data::Read_file()
                 outs.clear();
             }
         }
-        /*æµæ°´å›¾æ•°æ®è½½å…¥åŠè®¾å¤‡èŠ‚ç‚¹çš„è¾“å…¥è¾“å‡º*/
+        /*Á÷Ë®Í¼Êý¾ÝÔØÈë¼°Éè±¸½ÚµãµÄÊäÈëÊä³ö*/
         else if (block == 5) {
             getline(infile, ins);
             linegraph.edge_num = atoi(ins.c_str());
@@ -230,13 +230,13 @@ void Data::Read_file()
                     oneline.push_back(atoi(outs[j].c_str()));
                 int from = atoi(outs[1].c_str());
                 int to = atoi(outs[2].c_str());
-                device_data[from].next_device.push_back(&device_data[to]);//æ’å…¥ç¬¬ä¸€ä¸ªèŠ‚ç‚¹çš„next_device
-                device_data[to].last_device.push_back(&device_data[from]);//æ’å…¥ç¬¬äºŒä¸ªèŠ‚ç‚¹çš„last_device
+                device_data[from].next_device.push_back(&device_data[to]);//²åÈëµÚÒ»¸ö½ÚµãµÄnext_device
+                device_data[to].last_device.push_back(&device_data[from]);//²åÈëµÚ¶þ¸ö½ÚµãµÄlast_device
                 linegraph.graph_data.push_back(oneline);
                 outs.clear();
             }
         }
-        /*æ ¸å¿ƒæµæ°´çº¿å’Œé‚»æŽ¥çŸ©é˜µ*/
+        /*ºËÐÄÁ÷Ë®ÏßºÍÁÚ½Ó¾ØÕó*/
         else if (block == 6) {
             getline(infile, ins);
             coreline.edge_num = atoi(ins.c_str());
@@ -261,25 +261,25 @@ void Data::Read_file()
 
 void Data::Data_Choose() {
 
-    /*çª—å£æ”¯æŒèƒ½æºåŠåŒºåŸŸçš„ç­›é€‰*/
+    /*´°¿ÚÖ§³ÖÄÜÔ´¼°ÇøÓòµÄÉ¸Ñ¡*/
     for (auto& window : window_data) {
         for (auto& area : area_data) {
             if (window.workershop_index == area.workershop_index) {
-                //è¿™é‡Œæœ‰å¯èƒ½ä¼šå‡ºçŽ°å¾€seté‡Œé‡å¤æ’å…¥ç›¸åŒçš„èƒ½æºç±»åž‹ï¼Œä¸è¿‡æµ‹è¯•æ’å…¥ç›¸åŒçš„å¹¶ä¸ä¼šå†²çªï¼Œè€Œä¸”åªä¼šæ’å…¥ä¸€æ¬¡
+                //ÕâÀïÓÐ¿ÉÄÜ»á³öÏÖÍùsetÀïÖØ¸´²åÈëÏàÍ¬µÄÄÜÔ´ÀàÐÍ£¬²»¹ý²âÊÔ²åÈëÏàÍ¬µÄ²¢²»»á³åÍ»£¬¶øÇÒÖ»»á²åÈëÒ»´Î
                 window.support_energy.insert(area.energy_type);
                 window.support_area.push_back(area.index);
             }
         }
     }
 
-    /*è®¾å¤‡æ”¯æŒçš„çª—å£åŠåŒºåŸŸç­›é€‰*/
+    /*Éè±¸Ö§³ÖµÄ´°¿Ú¼°ÇøÓòÉ¸Ñ¡*/
     for (int i = 0; i < device_data.size(); i++) {
         for (int w = 0; w < window_num; w++) {
-            //çª—å£éœ€è¦æ”¯æŒé¢„åŠ å·¥//å¦‚æžœä¸æ˜¯æ ¸å¿ƒè®¾å¤‡å°±ä¸ç”¨
+            //´°¿ÚÐèÒªÖ§³ÖÔ¤¼Ó¹¤//Èç¹û²»ÊÇºËÐÄÉè±¸¾Í²»ÓÃ
             if (window_data[w].preprocess_device[device_data[i].type] || !device_data[i].is_core_device) {
-                //çœ‹çœ‹æœ‰æ²¡æœ‰åŒºåŸŸå¯ä»¥æ”¯æŒ
+                //¿´¿´ÓÐÃ»ÓÐÇøÓò¿ÉÒÔÖ§³Ö
                 for (auto& area : window_data[w].support_area) {
-                    //åˆ¤æ–­èƒ½æºèƒ½å¦åŒ¹é…
+                    //ÅÐ¶ÏÄÜÔ´ÄÜ·ñÆ¥Åä
                     if (device_data[i].surport_energy.find(area_data[area].energy_type) !=
                         device_data[i].surport_energy.end())
                         device_data[i].surport_window[w].emplace_back(area);
@@ -287,8 +287,15 @@ void Data::Data_Choose() {
             }
         }
     }
+    /*ºËÐÄ½ÚµãÁ´½Ó¹ØÏµ½¨Á¢*/
+    for (int i = 0; i < coreline.core_devices.size(); i++) {
+        if (i > 0)
+            device_data[coreline.core_devices[i]].last_coredev = &device_data[coreline.core_devices[i - 1]];
+        if (i < coreline.edge_num)
+            device_data[coreline.core_devices[i]].next_coredev = &device_data[coreline.core_devices[i + 1]];
+    }
 
-    /*å¯»æ‰¾å¤´ç»“ç‚¹*/
+    /*Ñ°ÕÒÍ·½áµã*/
     for (int i = 0; i < device_num; i++) {
         if (device_data[i].last_device.size() == 0)
             linegraph.first_device.push_back(&device_data[i]);
@@ -296,7 +303,7 @@ void Data::Data_Choose() {
             linegraph.latest_device.push_back(&device_data[i]);
     }
 
-    /*å±•å¼€å›žçŽ¯çª—å£ï¼Œç”Ÿæˆæœ€é•¿çš„çª—å£åºåˆ—*/
+    /*Õ¹¿ª»Ø»·´°¿Ú£¬Éú³É×î³¤µÄ´°¿ÚÐòÁÐ*/
     for (int out_slp = 0; out_slp < max_loop_num + 1; out_slp++){
         for (int loop = 0; loop < first_loop_window_num; loop++) {
             if (window_data[loop].self_loop) {

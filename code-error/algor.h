@@ -7,32 +7,36 @@
 
 class Result:public Data {
 public:
-    /*æ¯æ¬¡æ‰¾åˆ°æœ€ä½ä»£ä»·çš„åŒ¹é…åå°±swapåˆ°key=0çš„ä½ç½®*/
-    vector<vector<int>> installed_window; //ç»“æœï¼šè®¾å¤‡å®‰è£…çª—å£
-    vector<vector<int>> installed_area; //ç»“æœï¼šè®¾å¤‡å®‰è£…åŒºåŸŸ
-
+    /*Ã¿´ÎÕÒµ½×îµÍ´ú¼ÛµÄÆ¥Åäºó¾Íswapµ½key=0µÄÎ»ÖÃ*/
+    vector<vector<int>> installed_window; //½á¹û£ºÉè±¸°²×°´°¿Ú
+    vector<vector<int>> installed_area; //½á¹û£ºÉè±¸°²×°ÇøÓò
+    queue<int> L1, L2;   //·ÇºËĞÄÉè±¸²ÅÓÃµÃ×Å
     void Algorithm(Data& data);
 
 private:
     int result_index = -1;
+    int stage = 0;
     const long longmax = 2147483647;
+    int core_start_device;
+    int core_start_window_index;
     vector<long> match_costs;
     vector<int> path_wind;
-    vector<vector<int>> unhook_window;
-    vector<vector<int>> limit_windows;//çª—å£åŠ å·¥åŠ å·¥æ—¶é—´æ’å€¼æ’åº
+    vector<vector<int>> optimize_device;
     void back_trace(vector< vector<int>>& data, int nums, int sp);
 
     long Get_Cost(Data& data);
-    void Sort_Window(Data& data);
+    void Sort_Device(Data& data, int line);
     void Output(Data& data, int line);
-    bool Install_Match(Data& data, int line);
-    bool Forward(Data& data, int& bestline);
+    void State_Clear(Data& data, bool clear_all);
+    bool Install_Match(Data& data, int line, int cur_dev, int cur_wind_index, bool core_mode);
+    bool Forward(Data& data, int& bestline, bool core_mode);
     void Backward(Data& data, int& bestline);
-    bool Check_Match(Data& data, int dev_index, int wind, int wind_index, int line, int& area_index);
-    void install_device(Data& data, int device_index, int area_index, int wind, int line, int wind_index);
+    bool Check_Match(Data& data, int dev_index, int wind, int wind_index, int line, int& area_index, bool core_mode);
+    void install_device(Data& data, int device_index, int area_index, int wind, int line, int wind_index, bool core_mode);
     bool Install_Match_back(Data& data, int line);
     bool Check_Match_back(Data& data, int dev_index, int wind, int wind_index, int line, int& area_index);
-    void install_device_back(Data& data, int device_index, int area_index, int wind, int wind_index, int line, int pre_wind_index = -1, int pre_area_index = -1);
+    void install_device_back(Data& data, int device_index, int area_index, int wind, int wind_index, int line,  
+        int pre_wind_index = -1, int pre_area_index = -1);
 
 };
 
