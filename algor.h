@@ -37,6 +37,9 @@ private:
     void install_device_back(Data& data, int device_index, int area_index, int wind, int wind_index, int line,  
         int pre_wind_index = -1, int pre_area_index = -1);
 
+    long installCost(Data& data, int dev_index, int wind_index, int& area_index);
+    void optimCoreline(Data& data);
+    bool Core_Install_Match(Data& data, int line, int cur_dev, int cur_wind_index, bool core_mode);
 };
 
 
