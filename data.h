@@ -19,16 +19,13 @@ public:
     bool self_loop;  //初始化时读入
     int workershop_index;  //初始化时读入
     int cost_coefficient;  //初始化时读入
-    set<int> process_time;
     int in_times; //现在表示有多少对协同设备
-    int forward_intimes;
-    bool limit_in = false;
     vector<long> optim_cost;
     vector<bool> preprocess_device;  //初始化时读入
     set<int> support_energy;  //Data_Choose时读入
     vector<int> support_area;  //Data_Choose时读入
     unordered_map<int, int> already_installed_normall;
-    unordered_map<int, pair<int, int>> already_installed_core; //dev_index, wind_index, area
+    unordered_map<int, pair<int, int>> already_installed_core; //dev_index, area_index, process_time
 
     Window(int index, int self_loop, int workershop_index, int cost_coefficient) :
         index(index), self_loop(self_loop), workershop_index(workershop_index), cost_coefficient(cost_coefficient) {}
