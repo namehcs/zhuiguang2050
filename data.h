@@ -50,15 +50,15 @@ public:
     int index;  //初始化时读入
     int type;  //初始化时读入
     int installed_area;
-    int install_cost;
+    int install_cost = 2147483647;//初始化为最大值是为了Check_Match能适用于两种前向
     long optim_cost;
+    int done_lastnum = 0;
     bool is_core_device;  //初始化时读入
     vector<long> energy_install_cost; //初始化时读入
     vector<Device*> next_device; //graph初始化时读入
     vector<Device*> last_device; //graph初始化时读入
     Device* next_coredev = nullptr;
     Device* last_coredev = nullptr;
-    int done_lastnum;
     set<int> surport_energy; //初始化时读入
     unordered_map<int, vector<int>> surport_window;//窗口+区域
 
