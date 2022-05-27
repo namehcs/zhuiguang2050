@@ -19,15 +19,13 @@ public:
     bool self_loop;  //初始化时读入
     int workershop_index;  //初始化时读入
     int cost_coefficient;  //初始化时读入
-    set<int> process_time;
-    int in_times;
-    int forward_intimes;
-    bool limit_in = false;
+    int in_times; //现在表示有多少对协同设备
     vector<long> optim_cost;
     vector<bool> preprocess_device;  //初始化时读入
     set<int> support_energy;  //Data_Choose时读入
     vector<int> support_area;  //Data_Choose时读入
-    vector<int> already_installed_device;
+    unordered_map<int, int> already_installed_normall;
+    unordered_map<int, pair<int, int>> already_installed_core; //dev_index, area_index, process_time
 
     Window(int index, int self_loop, int workershop_index, int cost_coefficient) :
         index(index), self_loop(self_loop), workershop_index(workershop_index), cost_coefficient(cost_coefficient) {}
@@ -52,15 +50,15 @@ public:
     int index;  //初始化时读入
     int type;  //初始化时读入
     int installed_area;
-    int install_cost;
+    int install_cost = 2147483647;//初始化为最大值是为了Check_Match能适用于两种前向
     long optim_cost;
+    int done_lastnum = 0;
     bool is_core_device;  //初始化时读入
     vector<long> energy_install_cost; //初始化时读入
     vector<Device*> next_device; //graph初始化时读入
     vector<Device*> last_device; //graph初始化时读入
     Device* next_coredev = nullptr;
     Device* last_coredev = nullptr;
-    int done_lastnum;
     set<int> surport_energy; //初始化时读入
     unordered_map<int, vector<int>> surport_window;//窗口+区域
 

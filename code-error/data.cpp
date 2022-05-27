@@ -295,7 +295,7 @@ void Data::Data_Choose() {
             device_data[coreline.core_devices[i]].next_coredev = &device_data[coreline.core_devices[i + 1]];
     }
 
-    /*寻找头结点*/
+    /*寻找头尾结点*/
     for (int i = 0; i < device_num; i++) {
         if (device_data[i].last_device.size() == 0)
             linegraph.first_device.push_back(&device_data[i]);
