@@ -18,7 +18,7 @@ private:
     vector<long> match_costs;
     vector<int> path_wind;
     vector<vector<int>> optimize_device;
-    void back_trace(vector< vector<int>>& data, int nums, int sp);
+    void back_trace(vector<vector<int>>& data, int nums, int sp);
 
     long Get_Cost(Data& data);
     void Output(Data& data, int line);
@@ -28,7 +28,7 @@ private:
     void Backward(Data& data, int& bestline);
 
     bool Install_Match(Data& data, int line);
-    bool Small_Optim_Match(Data& data, int line, queue<int>& L3, int cur_wind_index);
+    bool Small_Optim_Match(Data& data, int line, int father_dev, int start_wind_index);
     bool Check_Match(Data& data, int dev_index, int wind, int wind_index, int line, int& area_index);
     void install_device(Data& data, int device_index, int area_index, int wind, int line, int wind_index);
 

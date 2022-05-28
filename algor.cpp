@@ -108,12 +108,12 @@ void Result::Algorithm(Data& data) {
 /**********************************************************************************************
 安装匹配算法
 **********************************************************************************************/
-bool Result::Small_Optim_Match(Data& data, int line, queue<int>& L3, int start_wind) {
+bool Result::Small_Optim_Match(Data& data, int line, int father_dev, int start_wind_index) {
 	bool valid_result = true;
 	int cur_wind, cur_area, cur_wind_index;
-	while (!L3.empty()) {
+	for (auto& son_dev : data.device_data[father_dev].next_device) {
 		/*确定调整范围，从开始设备及窗口序号，到结束设备及窗口序号*/
-		int start_dev = L3.front();
+		int start_dev = son_dev->index;
 		int cur_dev = start_dev, end_dev, end_wind_index;
 		while (1) {
 			if (data.device_data[cur_dev].next_device.size() != 1 ||
@@ -124,11 +124,14 @@ bool Result::Small_Optim_Match(Data& data, int line, queue<int>& L3, int start_w
 		}
 		end_dev = cur_dev;
 		end_wind_index = installed_window[line][end_dev];
+		if (end_wind_index <= start_wind_index)
+			continue;
 
 		/*开始前向调整*/
 		cur_dev = start_dev;
-		cur_wind_index = start_wind;
+		cur_wind_index = start_wind_index;
 		while (1) {
+			valid_result = true;
 			/*判断能否放入当前窗口*/
 			cur_wind = data.sqread_circle[cur_wind_index];
 			bool match_cur_wind = Check_Match(data, cur_dev, cur_wind, cur_wind_index, line, cur_area);
@@ -158,7 +161,6 @@ bool Result::Small_Optim_Match(Data& data, int line, queue<int>& L3, int start_w
 				break;
 			cur_dev = data.device_data[cur_dev].next_device[0]->index;
 		}
-		L3.pop();
 	}
 
 	return valid_result;
@@ -394,7 +396,7 @@ bool Result::Check_Match(Data& data, int dev_index, int wind, int wind_index, in
 	int cost = Install_Cost(data, dev_index, wind_index, area);
 
 	/*如果移到这个窗口成本变高了，就不放在这个窗口，这里分两种情况：第一个前向和后续调优的前向*/
-	if (cost > data.device_data[dev_index].install_cost)
+	if (cost >= data.device_data[dev_index].install_cost)
 		return false;
 
 	data.device_data[dev_index].install_cost = cost;
@@ -411,7 +413,7 @@ bool Result::Install_Match_back(Data& data, int line) {
 	int cur_dev, start_wind_index, cur_wind = 0;
 	int cur_wind_index = data.sqread_circle.size() - 1;
 	queue<int> L1, L2;//设备号，可以开始搜索的窗口号
-	queue<int> L3; //可以调整的设备号，同一时期互不影响
+	unordered_set<int> L3; //可以调整的设备号，同一时期互不影响
 	int start_optim_wind;
 
 	/*插入尾部节点*/
@@ -432,6 +434,15 @@ bool Result::Install_Match_back(Data& data, int line) {
 		}
 		cur_dev = L1.front();
 
+		/*局部前向调整*/
+		for (auto& son_dev : data.device_data[cur_dev].last_device) {
+			if (son_dev->next_device.size() > 1 && L3.find(son_dev->index) == L3.end()) {
+				L3.insert(son_dev->index);
+				start_optim_wind = installed_window[0][son_dev->index];
+				Small_Optim_Match(data, line, son_dev->index, start_optim_wind);
+			}
+		}
+
 		/*判断能否放入当前窗口*/
 		int cur_area;
 		cur_wind = data.sqread_circle[cur_wind_index];
@@ -441,24 +452,11 @@ bool Result::Install_Match_back(Data& data, int line) {
 			L1.pop();
 			continue;
 		}
+
 		int pre_wind = data.sqread_circle[installed_window[line][cur_dev]];
 		int pre_area = installed_area[line][cur_dev];
 		install_device_back(data, cur_dev, cur_area, cur_wind, cur_wind_index, line, pre_wind, pre_area);
 		L1.pop();
-
-		/*局部前向调整*/
-		for (auto& son_dev : data.device_data[cur_dev].last_device) {
-			if (son_dev->next_device.size() > 1) {
-				if (!L3.empty() && son_dev->done_lastnum == son_dev->next_device.size() - 1) {
-					start_optim_wind = installed_window[0][son_dev->index];
-					Small_Optim_Match(data, line, L3, start_optim_wind);
-				}
-				else {
-					L3.push(cur_dev);
-					break;
-				}
-			}
-		}
 
 		/*判断是否是结束节点*/
 		if (data.device_data[cur_dev].last_device.size() == 0) {

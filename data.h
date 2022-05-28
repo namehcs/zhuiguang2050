@@ -19,7 +19,7 @@ public:
     bool self_loop;  //初始化时读入
     int workershop_index;  //初始化时读入
     int cost_coefficient;  //初始化时读入
-    int in_times; //现在表示有多少对协同设备
+    int in_times = 0; //现在表示有多少对协同设备
     vector<long> optim_cost;
     vector<bool> preprocess_device;  //初始化时读入
     set<int> support_energy;  //Data_Choose时读入
